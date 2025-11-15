@@ -5,65 +5,95 @@ import '../styles/FarmersDashboard.css';
 const FarmersDashboard = () => {
   const { t, i18n } = useTranslation();
   
-  const languages = [
-    { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' },
-    { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', flag: '🇮🇳' },
-    { code: 'mr', name: 'Marathi', nativeName: 'मराठी', flag: '🇮🇳' }
-  ];
-
-  const handleLanguageChange = (languageCode) => {
-    i18n.changeLanguage(languageCode);
-  };
-
-  const getCurrentLanguage = () => {
-    return languages.find(lang => lang.code === i18n.language) || languages[0];
-  };
-
   const [cropForm, setCropForm] = useState({
     cropName: '',
+    cropType: '',
     quantity: '',
+    unit: 'kg',
     expectedPrice: '',
-    cropImage: null,
     district: '',
-    market: ''
+    market: '',
+    harvestDate: '',
+    cropImage: null
   });
   
-  const [predictionResult, setPredictionResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [demandAlerts, setDemandAlerts] = useState([]);
-  const [selectedCrop, setSelectedCrop] = useState(null);
-  const [cropSuggestions, setCropSuggestions] = useState([]);
-  const [marketStats, setMarketStats] = useState(null);
+  const [farmerForm, setFarmerForm] = useState({
+    name: '',
+    phone: '',
+    district: '',
+    taluka: ''
+  });
+  
   const [districts, setDistricts] = useState([]);
   const [markets, setMarkets] = useState([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-  const [loadingAlerts, setLoadingAlerts] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState(1);
+  const [backendStatus, setBackendStatus] = useState('checking');
 
-  // API Base URL
   const API_BASE_URL = 'http://127.0.0.1:5000/api';
 
-  // Fetch initial data on component mount
   useEffect(() => {
-    fetchCropSuggestions();
-    fetchDemandAlerts();
-    fetchMarketStats();
+    checkBackendConnection();
     fetchDistricts();
   }, []);
 
-  // Fetch districts for location-based predictions
-  const fetchDistricts = async () => {
+  const checkBackendConnection = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/districts/bajra`); // Using bajra as default
-      if (response.ok) {
-        const data = await response.json();
-        setDistricts(data.districts || []);
-      }
+      const response = await fetch('http://127.0.0.1:5000/');
+      setBackendStatus(response.ok ? 'connected' : 'error');
     } catch (error) {
-      console.error('Error fetching districts:', error);
+      setBackendStatus('error');
     }
   };
 
-  // Fetch markets when district is selected
+  const fetchDistricts = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/districts/bajra`);
+      if (response.ok) {
+        const data = await response.json();
+        setDistricts(data.districts || []);
+      } else {
+        await fetchDistrictsFallback();
+      }
+    } catch (error) {
+      await fetchDistrictsFallback();
+    }
+  };
+
+  const fetchDistrictsFallback = async () => {
+    try {
+      const commodities = ['tomato', 'onion', 'wheat', 'rice'];
+      for (const commodity of commodities) {
+        const response = await fetch(`${API_BASE_URL}/districts/${commodity}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.districts?.length > 0) {
+            setDistricts(data.districts);
+            break;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('All district fetches failed');
+    }
+  };
+
+  const fetchMarkets = async (district) => {
+    try {
+      const districtId = districts.find(d => d.name === district)?.id || district;
+      const response = await fetch(`${API_BASE_URL}/markets/${districtId}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setMarkets(data.markets || []);
+      } else {
+        setMarkets([]);
+      }
+    } catch (error) {
+      setMarkets([]);
+    }
+  };
+
   useEffect(() => {
     if (cropForm.district) {
       fetchMarkets(cropForm.district);
@@ -72,912 +102,474 @@ const FarmersDashboard = () => {
     }
   }, [cropForm.district]);
 
-  const fetchMarkets = async (district) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/markets/${district}`);
-      if (response.ok) {
-        const data = await response.json();
-        setMarkets(data.markets || []);
-      }
-    } catch (error) {
-      console.error('Error fetching markets:', error);
-    }
+  const handleFarmerInputChange = (field, value) => {
+    setFarmerForm(prev => ({ ...prev, [field]: value }));
   };
 
-  // Real-time Crop Suggestions API
-  const fetchCropSuggestions = async () => {
-    setLoadingSuggestions(true);
-    try {
-      // Replace with your actual crop suggestion API endpoint
-      const response = await fetch(`${API_BASE_URL}/crop-suggestions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          season: getCurrentSeason(),
-          region: 'Maharashtra',
-          soil_type: 'black_cotton' // You can make this dynamic based on user input
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setCropSuggestions(data.suggestions || getDefaultSuggestions());
-      } else {
-        // Fallback to default suggestions if API fails
-        setCropSuggestions(getDefaultSuggestions());
-      }
-    } catch (error) {
-      console.error('Error fetching crop suggestions:', error);
-      setCropSuggestions(getDefaultSuggestions());
-    } finally {
-      setLoadingSuggestions(false);
-    }
-  };
-
-  // Real-time Demand Alerts API
-  const fetchDemandAlerts = async () => {
-    setLoadingAlerts(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/demand-alerts`);
-      if (response.ok) {
-        const data = await response.json();
-        setDemandAlerts(data.alerts || getDefaultAlerts());
-      } else {
-        setDemandAlerts(getDefaultAlerts());
-      }
-    } catch (error) {
-      console.error('Error fetching demand alerts:', error);
-      setDemandAlerts(getDefaultAlerts());
-    } finally {
-      setLoadingAlerts(false);
-    }
-  };
-
-  // Real-time Market Statistics API
-  const fetchMarketStats = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/market-stats`);
-      if (response.ok) {
-        const data = await response.json();
-        setMarketStats(data.stats);
-      }
-    } catch (error) {
-      console.error('Error fetching market stats:', error);
-    }
-  };
-
-  // Get current season for crop suggestions
-  const getCurrentSeason = () => {
-    const month = new Date().getMonth() + 1;
-    if (month >= 6 && month <= 10) return 'kharif';
-    if (month >= 11 || month <= 3) return 'rabi';
-    return 'zaid';
-  };
-
-  // Default fallback data
-  const getDefaultSuggestions = () => [
-    {
-      id: 1,
-      name: "Moong Dal (Green Gram)",
-      confidence: 94,
-      priceTrend: "high",
-      expectedIncome: "₹6500/quintal",
-      harvestTime: "60 days",
-      description: "High demand in urban markets, low water requirement",
-      suitability: "Perfect for your region's soil type",
-      risk: "Low",
-      image: "🌱"
-    },
-    {
-      id: 2,
-      name: "Mustard",
-      confidence: 89,
-      priceTrend: "medium",
-      expectedIncome: "₹4200/quintal",
-      harvestTime: "120 days",
-      description: "Low rainfall crop, good for oil production",
-      suitability: "Ideal for current season",
-      risk: "Medium",
-      image: "🟡"
-    },
-    {
-      id: 3,
-      name: "Chickpea",
-      confidence: 87,
-      priceTrend: "high",
-      expectedIncome: "₹5500/quintal",
-      harvestTime: "90 days",
-      description: "Fast harvesting, high nutritional value",
-      suitability: "Matches your farm size",
-      risk: "Low",
-      image: "🟤"
-    }
-  ];
-
-  const getDefaultAlerts = () => [
-    {
-      id: 1,
-      crop: "Tomato",
-      location: "Pune",
-      demand: "high",
-      price: "₹45/kg",
-      trend: "up"
-    },
-    {
-      id: 2,
-      crop: "Onion",
-      location: "Nashik",
-      demand: "medium",
-      price: "₹32/kg",
-      trend: "stable"
-    },
-    {
-      id: 3,
-      crop: "Wheat",
-      location: "Aurangabad",
-      demand: "high",
-      price: "₹2200/quintal",
-      trend: "up"
-    }
-  ];
-
-  const handleInputChange = (field, value) => {
+  const handleCropInputChange = (field, value) => {
     setCropForm(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
+      ...(field === 'district' && { market: '' })
     }));
   };
 
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
-      setCropForm(prev => ({
-        ...prev,
-        cropImage: URL.createObjectURL(file)
-      }));
+      setCropForm(prev => ({ ...prev, cropImage: file }));
     }
   };
 
-  // Real-time Price Prediction API
-  const handleCropPrediction = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (backendStatus !== 'connected') {
+      alert('Cannot connect to server. Please make sure the backend is running.');
+      return;
+    }
+    
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/predict`, {
+      let farmerId;
+      const farmerResponse = await fetch(`${API_BASE_URL}/farmers`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          commodity: cropForm.cropName,
-          district: cropForm.district,
-          market: cropForm.market,
-          quantity: cropForm.quantity,
-          expected_price: cropForm.expectedPrice
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(farmerForm)
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setPredictionResult({
-          predictedPrice: `₹${data.predicted_price}/quintal`,
-          crop: data.commodity_display || cropForm.cropName,
-          marketAverage: `₹${(data.predicted_price * 0.9).toFixed(0)}/quintal`, // Simulated market average
-          profitPotential: "+10.5%",
-          confidence: "92%",
-          recommendation: `Good time to sell in ${data.market} market`,
-          actualData: data
-        });
+      if (farmerResponse.ok) {
+        const farmerData = await farmerResponse.json();
+        farmerId = farmerData.farmer_id;
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Prediction failed');
+        const errorData = await farmerResponse.json();
+        if (errorData.farmer_id) {
+          farmerId = errorData.farmer_id;
+        } else {
+          throw new Error(errorData.error || 'Failed to create farmer');
+        }
+      }
+
+      const formData = new FormData();
+      Object.entries(cropForm).forEach(([key, value]) => {
+        if (value !== null && value !== '') {
+          formData.append(key.replace(/([A-Z])/g, '_$1').toLowerCase(), value);
+        }
+      });
+      formData.append('farmer_id', farmerId);
+
+      const productResponse = await fetch(`${API_BASE_URL}/products`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (productResponse.ok) {
+        alert('Product added successfully!');
+        resetForms();
+        setStep(1);
+      } else {
+        const errorData = await productResponse.json();
+        throw new Error(errorData.error || 'Failed to add product');
       }
     } catch (error) {
-      console.error('Prediction error:', error);
-      // Fallback to simulated prediction
-      setPredictionResult({
-        predictedPrice: "₹42/kg",
-        crop: cropForm.cropName || "Tomato",
-        marketAverage: "₹38/kg",
-        profitPotential: "+10.5%",
-        confidence: "92%",
-        recommendation: "Good time to sell in Pune market"
-      });
+      alert('Error: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Crop Health Analysis API (if image is uploaded)
-  const analyzeCropHealth = async (imageFile) => {
-    try {
-      const formData = new FormData();
-      formData.append('crop_image', imageFile);
-      
-      const response = await fetch(`${API_BASE_URL}/analyze-crop-health`, {
-        method: 'POST',
-        body: formData
-      });
-
-      if (response.ok) {
-        return await response.json();
-      }
-    } catch (error) {
-      console.error('Crop health analysis error:', error);
-    }
-    return null;
+  const resetForms = () => {
+    setFarmerForm({ name: '', phone: '', district: '', taluka: '' });
+    setCropForm({
+      cropName: '', cropType: '', quantity: '', unit: 'kg',
+      expectedPrice: '', district: '', market: '', harvestDate: '', cropImage: null
+    });
+    const fileInput = document.getElementById('cropImageUpload');
+    if (fileInput) fileInput.value = '';
   };
 
-  const getTrendIcon = (trend) => {
-    switch (trend) {
-      case 'high': return '📈';
-      case 'medium': return '➡️';
-      case 'low': return '📉';
-      default: return '📊';
+  const nextStep = () => {
+    if (!farmerForm.name || !farmerForm.phone || !farmerForm.district) {
+      alert('Please fill all required farmer details');
+      return;
     }
+    setStep(2);
   };
 
-  const getDemandBadge = (demand) => {
-    switch (demand) {
-      case 'high': return { class: 'demand-high', text: 'High Demand' };
-      case 'medium': return { class: 'demand-medium', text: 'Medium Demand' };
-      case 'low': return { class: 'demand-low', text: 'Low Demand' };
-      default: return { class: 'demand-medium', text: 'Medium Demand' };
-    }
-  };
+  const prevStep = () => setStep(1);
 
-  // Refresh data periodically
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchDemandAlerts();
-      fetchMarketStats();
-    }, 30000); // Refresh every 30 seconds
+  const cropOptions = [
+    'Tomato', 'Onion', 'Potato', 'Wheat', 'Rice', 'Bajra', 'Cotton', 
+    'Sugarcane', 'Chikoo', 'Grapes', 'Mango', 'Orange', 'Papaya', 
+    'Moong Dal', 'Mustard', 'Chickpea'
+  ];
 
-    return () => clearInterval(interval);
-  }, []);
+  const cropTypeOptions = [
+    'Vegetable', 'Fruit', 'Grain', 'Pulse', 'Oilseed', 'Fiber', 'Commercial'
+  ];
 
   return (
     <div className="farmers-dashboard">
-      {/* Bootstrap CSS CDN */}
-      <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-      />
-      <link
-        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css"
-        rel="stylesheet"
-      />
-
-      <div className="container-fluid">
-        {/* Dashboard Header */}
-        <div className="dashboard-header text-center mb-5">
-          <h1 className="display-4 fw-bold text-success">
-            <i className="bi bi-person-badge me-3"></i>
-            Farmer's Dashboard
-          </h1>
-          <p className="lead text-muted fst-italic">
-            "Every market under our watch — so you get the right price"
-          </p>
-          <div className="d-flex justify-content-center align-items-center gap-3 mt-3">
-            <span className="badge bg-success">
-              <i className="bi bi-wifi me-1"></i>
-              Live Data
-            </span>
-            <span className="badge bg-primary">
-              <i className="bi bi-arrow-clockwise me-1"></i>
-              Auto-refresh
-            </span>
+      <div className="container">
+        {/* Status Bar */}
+        <div className="status-bar">
+          <div className={`status-indicator ${backendStatus === 'connected' ? 'connected' : 'error'}`}>
+            <div className="status-dot"></div>
+            {backendStatus === 'connected' ? 'Connected' : 'Server Offline'}
+            {backendStatus === 'connected' && districts.length > 0 && ` • ${districts.length} districts`}
           </div>
         </div>
 
-        <div className="row justify-content-center">
-          <div className="col-12 col-xxl-10">
-            {/* AI Crop Prediction Card - TOP */}
-            <div className="card prediction-card shadow-lg border-0 rounded-4 mb-5">
-              <div className="card-header bg-transparent border-bottom-0 py-4">
-                <div className="d-flex justify-content-between align-items-center">
-                  <h2 className="h3 mb-0 text-success">
-                    <i className="bi bi-robot me-2"></i>
-                    AI Active
-                  </h2>
-                  <span className="badge bg-primary bg-gradient fs-6 px-3 py-2">
-                    <i className="bi bi-lightning-charge me-1"></i>
-                    Live Prediction
-                  </span>
-                </div>
+        {/* Progress Steps */}
+        <div className="progress-steps-container">
+          <div className={`step ${step >= 1 ? 'active' : ''}`}>
+            <div className="step-icon">👨‍🌾</div>
+            <span>Farmer Details</span>
+          </div>
+          <div className="step-connector"></div>
+          <div className={`step ${step >= 2 ? 'active' : ''}`}>
+            <div className="step-icon">🌱</div>
+            <span>Crop Details</span>
+          </div>
+        </div>
+
+        {/* Main Form Card */}
+        <div className="form-card">
+          <div className="card-header">
+            <h1>
+              {step === 1 ? 'Add Farmer Details' : 'Add Crop Details'}
+            </h1>
+            <div className="step-badge">Step {step} of 2</div>
+          </div>
+
+          <div className="card-body">
+            {backendStatus !== 'connected' && (
+              <div className="warning-banner">
+                <strong>Backend Server Not Running!</strong>
+                <p>Please start your Flask backend server on http://127.0.0.1:5000</p>
               </div>
-
-              <div className="card-body">
-                <form onSubmit={handleCropPrediction}>
-                  <h4 className="mb-4 text-dark fw-bold">
-                    <i className="bi bi-upload me-2"></i>
-                    Upload Crop Details
-                  </h4>
-
-                  <div className="row justify-content-center">
-                    <div className="col-12 col-md-10 col-lg-8">
-                      <div className="row g-4">
-                        {/* Crop Name */}
-                        <div className="col-md-6">
-                          <label className="form-label fw-semibold text-dark fs-6">
-                            <i className="bi bi-tree me-2 text-success"></i>
-                            Crop Name
-                          </label>
-                          <select
-                            className="form-select form-select-lg border-2 shadow-sm"
-                            value={cropForm.cropName}
-                            onChange={(e) => handleInputChange('cropName', e.target.value)}
-                            required
-                          >
-                            <option value="">Select Crop Type</option>
-                            <option value="bajra">Bajra</option>
-                            <option value="wheat">Wheat</option>
-                            <option value="rice">Rice</option>
-                            <option value="cotton">Cotton</option>
-                            <option value="sugarcane">Sugarcane</option>
-                            <option value="chikoo">Chikoo</option>
-                            <option value="grapes">Grapes</option>
-                            <option value="mangos">Mangoes</option>
-                            <option value="orange">Orange</option>
-                            <option value="papaya">Papaya</option>
-                          </select>
-                        </div>
-
-                        {/* District */}
-                        <div className="col-md-6">
-                          <label className="form-label fw-semibold text-dark fs-6">
-                            <i className="bi bi-geo-alt me-2 text-success"></i>
-                            District
-                          </label>
-                          <select
-                            className="form-select form-select-lg border-2 shadow-sm"
-                            value={cropForm.district}
-                            onChange={(e) => handleInputChange('district', e.target.value)}
-                            required
-                          >
-                            <option value="">Select District</option>
-                            {districts.map((district) => (
-                              <option key={district.id} value={district.id}>
-                                {district.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {/* Market */}
-                        <div className="col-md-6">
-                          <label className="form-label fw-semibold text-dark fs-6">
-                            <i className="bi bi-shop me-2 text-success"></i>
-                            Market
-                          </label>
-                          <select
-                            className="form-select form-select-lg border-2 shadow-sm"
-                            value={cropForm.market}
-                            onChange={(e) => handleInputChange('market', e.target.value)}
-                            required
-                            disabled={!cropForm.district}
-                          >
-                            <option value="">{cropForm.district ? 'Select Market' : 'Select District First'}</option>
-                            {markets.map((market) => (
-                              <option key={market.id} value={market.id}>
-                                {market.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {/* Quantity */}
-                        <div className="col-md-6">
-                          <label className="form-label fw-semibold text-dark fs-6">
-                            <i className="bi bi-scale me-2 text-success"></i>
-                            Quantity
-                          </label>
-                          <input
-                            type="text"
-                            className="form-control form-control-lg border-2 shadow-sm"
-                            placeholder="e.g., 100 kg or 5 quintal"
-                            value={cropForm.quantity}
-                            onChange={(e) => handleInputChange('quantity', e.target.value)}
-                            required
-                          />
-                          <div className="form-text text-muted small">
-                            Enter quantity in kilograms (kg) or quintals
-                          </div>
-                        </div>
-
-                        {/* Expected Price */}
-                        <div className="col-md-6">
-                          <label className="form-label fw-semibold text-dark fs-6">
-                            <i className="bi bi-currency-rupee me-2 text-success"></i>
-                            Expected Price
-                          </label>
-                          <input
-                            type="text"
-                            className="form-control form-control-lg border-2 shadow-sm"
-                            placeholder="e.g., ₹40/kg or ₹4000/quintal"
-                            value={cropForm.expectedPrice}
-                            onChange={(e) => handleInputChange('expectedPrice', e.target.value)}
-                            required
-                          />
-                        </div>
-
-                        {/* Crop Photo Upload */}
-                        <div className="col-12">
-                          <label className="form-label fw-semibold text-dark fs-6">
-                            <i className="bi bi-image me-2 text-success"></i>
-                            Crop Photo (Optional)
-                          </label>
-                          <div className="image-upload-container">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={handleImageUpload}
-                              className="image-upload-input"
-                              id="cropImageUpload"
-                            />
-                            <label htmlFor="cropImageUpload" className="image-upload-preview w-100">
-                              {cropForm.cropImage ? (
-                                <div className="position-relative">
-                                  <img
-                                    src={cropForm.cropImage}
-                                    alt="Crop preview"
-                                    className="img-fluid rounded shadow-sm w-100"
-                                    style={{ height: '200px', objectFit: 'cover' }}
-                                  />
-                                  <div className="position-absolute top-0 end-0 m-2">
-                                    <span className="badge bg-success px-3 py-2">
-                                      <i className="bi bi-check-lg me-1"></i>
-                                      Uploaded
-                                    </span>
-                                  </div>
-                                  <div className="position-absolute bottom-0 start-0 m-2">
-                                    <button
-                                      type="button"
-                                      className="btn btn-sm btn-outline-light"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        setCropForm(prev => ({ ...prev, cropImage: null }));
-                                      }}
-                                    >
-                                      <i className="bi bi-trash me-1"></i>
-                                      Remove
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="upload-placeholder text-center py-5 border-2 border-dashed rounded-3 bg-light">
-                                  <i className="bi bi-cloud-arrow-up display-4 text-muted d-block mb-3"></i>
-                                  <p className="text-muted mb-2 fw-semibold">Click to upload crop image</p>
-                                  <p className="text-muted small mb-0">AI will analyze crop health (Optional)</p>
-                                </div>
-                              )}
-                            </label>
-                          </div>
-                        </div>
-
-                        {/* Submit Button */}
-                        <div className="col-12 text-center mt-4">
-                          <button
-                            type="submit"
-                            className="btn btn-success btn-lg px-5 py-3 fw-bold w-100"
-                            disabled={loading}
-                          >
-                            {loading ? (
-                              <>
-                                <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                                <span className="fs-6">AI is analyzing your crop...</span>
-                              </>
-                            ) : (
-                              <>
-                                <i className="bi bi-magic me-2"></i>
-                                <span className="fs-6">Get Live Price Prediction</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </form>
-
-                {/* Prediction Results */}
-                {predictionResult && (
-                  <div className="row justify-content-center mt-4">
-                    <div className="col-12">
-                      <div className="prediction-results p-4 bg-light rounded-3 border-start border-4 border-success">
-                        <h4 className="text-dark mb-3 fw-bold text-center">
-                          <i className="bi bi-graph-up-arrow me-2 text-success"></i>
-                          Live AI Price Prediction
-                        </h4>
-
-                        <div className="text-center mb-4">
-                          <div className="prediction-price display-4 fw-bold text-success mb-2">
-                            {predictionResult.predictedPrice}
-                          </div>
-                          <p className="prediction-crop text-muted fs-5">
-                            Suggested price for <strong>{predictionResult.crop}</strong>
-                          </p>
-                        </div>
-
-                        <div className="row g-3 mb-4">
-                          <div className="col-12 col-md-4">
-                            <div className="text-center p-3 bg-white rounded-3 border">
-                              <i className="bi bi-shop fs-2 text-primary mb-2 d-block"></i>
-                              <div className="stat-label text-muted small">Market Average</div>
-                              <div className="stat-value fw-bold fs-5">{predictionResult.marketAverage}</div>
-                            </div>
-                          </div>
-                          <div className="col-12 col-md-4">
-                            <div className="text-center p-3 bg-white rounded-3 border">
-                              <i className="bi bi-arrow-up-right fs-2 text-success mb-2 d-block"></i>
-                              <div className="stat-label text-muted small">Profit Potential</div>
-                              <div className="stat-value fw-bold fs-5 text-success">{predictionResult.profitPotential}</div>
-                            </div>
-                          </div>
-                          <div className="col-12 col-md-4">
-                            <div className="text-center p-3 bg-white rounded-3 border">
-                              <i className="bi bi-shield-check fs-2 text-danger mb-2 d-block"></i>
-                              <div className="stat-label text-muted small">AI Confidence</div>
-                              <div className="stat-value fw-bold fs-5 text-danger">{predictionResult.confidence}</div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="recommendation alert alert-success border-0 text-center">
-                          <div className="d-flex align-items-center justify-content-center">
-                            <i className="bi bi-lightbulb fs-4 text-warning me-2"></i>
-                            <div>
-                              <strong className="d-block">Expert Recommendation</strong>
-                              <span className="small">{predictionResult.recommendation}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Bottom Section - Crop Suggestions & Demand Alerts */}
-            <div className="row g-4">
-              {/* Crop Suggestions - Main Content */}
-              <div className="col-12 col-lg-8">
-                <div className="card suggestions-card shadow-lg border-0 rounded-4 h-100">
-                  <div className="card-header bg-transparent border-bottom-0 py-4">
-                    <div className="d-flex justify-content-between align-items-center">
-                      <div>
-                        <h2 className="h3 mb-1 text-success">
-                          <i className="bi bi-seedling me-2"></i>
-                          Smart Crop Suggestions
-                        </h2>
-                        <p className="text-muted mb-0 fst-italic small">
-                          "Now farmers themselves will decide what to sow, and how much to earn"
-                        </p>
-                      </div>
-                      <div className="d-flex align-items-center gap-2">
-                        <span className="badge bg-success bg-opacity-10 text-success border border-success">
-                          {loadingSuggestions ? 'Loading...' : `${cropSuggestions.length} Options`}
-                        </span>
-                        <button 
-                          className="btn btn-sm btn-outline-success"
-                          onClick={fetchCropSuggestions}
-                          disabled={loadingSuggestions}
-                        >
-                          <i className="bi bi-arrow-clockwise"></i>
-                        </button>
-                      </div>
-                    </div>
+            )}
+            
+            <form onSubmit={handleSubmit}>
+              
+              {/* Step 1: Farmer Details */}
+              {step === 1 && (
+                <div className="form-grid">
+                  <div className="section-title">
+                    <span className="section-icon">👤</span>
+                    Farmer Information
                   </div>
 
-                  <div className="card-body">
-                    {loadingSuggestions ? (
-                      <div className="text-center py-5">
-                        <div className="spinner-border text-success" role="status">
-                          <span className="visually-hidden">Loading suggestions...</span>
-                        </div>
-                        <p className="text-muted mt-3">Loading AI crop recommendations...</p>
-                      </div>
-                    ) : (
-                      <div className="row g-4">
-                        {cropSuggestions.map(crop => (
-                          <div key={crop.id} className="col-12 col-md-6 col-xl-4">
-                            <div
-                              className={`crop-suggestion-card card h-100 border-hover transition-all ${
-                                selectedCrop?.id === crop.id ? 'border-success selected-crop' : ''
-                              }`}
-                              onClick={() => setSelectedCrop(crop)}
-                            >
-                              <div className="card-body d-flex flex-column">
-                                {/* Header */}
-                                <div className="d-flex align-items-center mb-3">
-                                  <div className="crop-icon me-3">
-                                    <div className="display-6">{crop.image}</div>
-                                  </div>
-                                  <div className="flex-grow-1">
-                                    <h6 className="card-title mb-1 fw-bold text-dark">{crop.name}</h6>
-                                    <span className={`badge ${
-                                      crop.confidence > 90 ? 'bg-success' : 'bg-warning'
-                                    }`}>
-                                      {crop.confidence}% Match
-                                    </span>
-                                  </div>
-                                </div>
+                  <div className="input-group">
+                    <label>Full Name *</label>
+                    <input
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={farmerForm.name}
+                      onChange={(e) => handleFarmerInputChange('name', e.target.value)}
+                      required
+                    />
+                  </div>
 
-                                {/* Stats */}
-                                <div className="mb-3">
-                                  <div className="d-flex justify-content-between align-items-center mb-2">
-                                    <small className="text-muted">Income</small>
-                                    <strong className="text-success">{crop.expectedIncome}</strong>
-                                  </div>
-                                  <div className="d-flex justify-content-between align-items-center mb-2">
-                                    <small className="text-muted">Harvest</small>
-                                    <strong>{crop.harvestTime}</strong>
-                                  </div>
-                                  <div className="d-flex justify-content-between align-items-center">
-                                    <small className="text-muted">Trend</small>
-                                    <span className={`badge ${
-                                      crop.priceTrend === 'high' ? 'bg-danger' : 'bg-warning'
-                                    }`}>
-                                      {getTrendIcon(crop.priceTrend)} {crop.priceTrend}
-                                    </span>
-                                  </div>
-                                </div>
+                  <div className="input-group">
+                    <label>Phone Number *</label>
+                    <input
+                      type="tel"
+                      placeholder="Enter 10-digit phone number"
+                      value={farmerForm.phone}
+                      onChange={(e) => handleFarmerInputChange('phone', e.target.value)}
+                      required
+                      pattern="[0-9]{10}"
+                      maxLength="10"
+                    />
+                    <span className="input-hint">10-digit mobile number without country code</span>
+                  </div>
 
-                                {/* Description */}
-                                <p className="card-text text-muted small flex-grow-1">
-                                  {crop.description}
-                                </p>
+                  <div className="input-group">
+                    <label>District *</label>
+                    <select
+                      value={farmerForm.district}
+                      onChange={(e) => handleFarmerInputChange('district', e.target.value)}
+                      required
+                    >
+                      <option value="">Select District</option>
+                      {districts.map((district) => (
+                        <option key={district.id} value={district.name}>
+                          {district.name}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="input-hint">{districts.length} districts available</span>
+                  </div>
 
-                                {/* Tags */}
-                                <div className="d-flex flex-wrap gap-1 mb-3">
-                                  <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
-                                    <i className="bi bi-check-circle me-1"></i>
-                                    {crop.suitability.split(' ')[0]}
-                                  </span>
-                                  <span className="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">
-                                    <i className="bi bi-shield-check me-1"></i>
-                                    {crop.risk} Risk
-                                  </span>
-                                </div>
+                  <div className="input-group">
+                    <label>Taluka (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="Enter taluka name"
+                      value={farmerForm.taluka}
+                      onChange={(e) => handleFarmerInputChange('taluka', e.target.value)}
+                    />
+                  </div>
 
-                                <button className="btn btn-outline-primary btn-sm w-100">
-                                  <i className="bi bi-eye me-1"></i>
-                                  View Details
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                  <div className="form-actions">
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={nextStep}
+                      disabled={backendStatus !== 'connected' || districts.length === 0}
+                    >
+                      Next: Crop Details →
+                    </button>
+                    {districts.length === 0 && backendStatus === 'connected' && (
+                      <div className="warning-text">
+                        No districts available. Please check if the commodity models are loaded correctly.
                       </div>
                     )}
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Sidebar - Demand Alerts & Quick Stats */}
-              <div className="col-12 col-lg-4">
-                {/* Demand Alerts Card */}
-                <div className="card alerts-card shadow-lg border-0 rounded-4 mb-4">
-                  <div className="card-header bg-transparent border-bottom-0 py-4">
-                    <div className="d-flex justify-content-between align-items-center">
-                      <div>
-                        <h3 className="h5 mb-0 text-success">
-                          <i className="bi bi-bell-fill me-2"></i>
-                          Live Demand Alerts
-                        </h3>
-                        <small className="text-muted">Real-time market updates</small>
-                      </div>
-                      <button 
-                        className="btn btn-sm btn-outline-success"
-                        onClick={fetchDemandAlerts}
-                        disabled={loadingAlerts}
+              {/* Step 2: Crop Details */}
+              {step === 2 && (
+                <div className="form-grid">
+                  <div className="section-title">
+                    <span className="section-icon">🌾</span>
+                    Crop Information
+                  </div>
+
+                  <div className="input-group">
+                    <label>Crop Name *</label>
+                    <select
+                      value={cropForm.cropName}
+                      onChange={(e) => handleCropInputChange('cropName', e.target.value)}
+                      required
+                    >
+                      <option value="">Select Crop Name</option>
+                      {cropOptions.map(crop => (
+                        <option key={crop} value={crop}>{crop}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="input-group">
+                    <label>Crop Type *</label>
+                    <select
+                      value={cropForm.cropType}
+                      onChange={(e) => handleCropInputChange('cropType', e.target.value)}
+                      required
+                    >
+                      <option value="">Select Crop Type</option>
+                      {cropTypeOptions.map(type => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="input-group">
+                    <label>Quantity *</label>
+                    <div className="quantity-input">
+                      <input
+                        type="number"
+                        placeholder="Enter quantity"
+                        value={cropForm.quantity}
+                        onChange={(e) => handleCropInputChange('quantity', e.target.value)}
+                        required
+                        min="0"
+                        step="0.01"
+                      />
+                      <select
+                        value={cropForm.unit}
+                        onChange={(e) => handleCropInputChange('unit', e.target.value)}
                       >
-                        <i className="bi bi-arrow-clockwise"></i>
+                        <option value="kg">kg</option>
+                        <option value="quintal">Quintal</option>
+                      </select>
+                    </div>
+                    <span className="input-hint">
+                      {cropForm.unit === 'quintal' ? '1 Quintal = 100 kg' : 'Enter weight in kilograms'}
+                    </span>
+                  </div>
+
+                  <div className="input-group">
+                    <label>Expected Price (₹) *</label>
+                    <div className="price-input">
+                      <span className="currency-symbol">₹</span>
+                      <input
+                        type="number"
+                        placeholder="Expected price per unit"
+                        value={cropForm.expectedPrice}
+                        onChange={(e) => handleCropInputChange('expectedPrice', e.target.value)}
+                        required
+                        min="0"
+                        step="0.01"
+                      />
+                      <span className="unit-display">/{cropForm.unit}</span>
+                    </div>
+                    <span className="input-hint">Expected selling price per {cropForm.unit}</span>
+                  </div>
+
+                  <div className="input-group">
+                    <label>District for Sale *</label>
+                    <select
+                      value={cropForm.district}
+                      onChange={(e) => handleCropInputChange('district', e.target.value)}
+                      required
+                    >
+                      <option value="">Select District</option>
+                      {districts.map((district) => (
+                        <option key={district.id} value={district.name}>
+                          {district.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="input-group">
+                    <label>Market *</label>
+                    <select
+                      value={cropForm.market}
+                      onChange={(e) => handleCropInputChange('market', e.target.value)}
+                      required
+                      disabled={!cropForm.district || markets.length === 0}
+                    >
+                      <option value="">
+                        {!cropForm.district 
+                          ? 'First select district' 
+                          : markets.length === 0 
+                            ? 'No markets available' 
+                            : 'Select Market'
+                        }
+                      </option>
+                      {markets.map((market) => (
+                        <option key={market.id} value={market.name}>
+                          {market.name}
+                        </option>
+                      ))}
+                    </select>
+                    {cropForm.district && markets.length === 0 && (
+                      <span className="warning-text">
+                        No markets found for {cropForm.district}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="input-group">
+                    <label>Harvest Date *</label>
+                    <input
+                      type="date"
+                      value={cropForm.harvestDate}
+                      onChange={(e) => handleCropInputChange('harvestDate', e.target.value)}
+                      required
+                      max={new Date().toISOString().split('T')[0]}
+                    />
+                    <span className="input-hint">Select the date when the crop was harvested</span>
+                  </div>
+
+                  <div className="input-group">
+                    <label>Crop Photo (Optional)</label>
+                    <div className="image-upload">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        id="cropImageUpload"
+                      />
+                      <label htmlFor="cropImageUpload" className="upload-area">
+                        {cropForm.cropImage ? (
+                          <div className="image-preview">
+                            <img
+                              src={URL.createObjectURL(cropForm.cropImage)}
+                              alt="Crop preview"
+                            />
+                            <button
+                              type="button"
+                              className="remove-image"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setCropForm(prev => ({ ...prev, cropImage: null }));
+                              }}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="upload-placeholder">
+                            <div className="upload-icon">📷</div>
+                            <p>Click to upload crop image</p>
+                            <span>JPG, PNG, WEBP (Max 5MB)</span>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Form Summary */}
+                  <div className="summary-card">
+                    <h3>Product Summary</h3>
+                    <div className="summary-grid">
+                      <div className="summary-item">
+                        <span>Farmer:</span>
+                        <strong>{farmerForm.name}</strong>
+                      </div>
+                      <div className="summary-item">
+                        <span>Phone:</span>
+                        <strong>{farmerForm.phone}</strong>
+                      </div>
+                      <div className="summary-item">
+                        <span>Crop:</span>
+                        <strong>{cropForm.cropName || 'Not selected'}</strong>
+                      </div>
+                      <div className="summary-item">
+                        <span>Type:</span>
+                        <strong>{cropForm.cropType || 'Not selected'}</strong>
+                      </div>
+                      <div className="summary-item">
+                        <span>Quantity:</span>
+                        <strong>{cropForm.quantity ? `${cropForm.quantity} ${cropForm.unit}` : 'Not entered'}</strong>
+                      </div>
+                      <div className="summary-item">
+                        <span>Price:</span>
+                        <strong>{cropForm.expectedPrice ? `₹${cropForm.expectedPrice}/${cropForm.unit}` : 'Not entered'}</strong>
+                      </div>
+                      <div className="summary-item">
+                        <span>Location:</span>
+                        <strong>{cropForm.district && cropForm.market ? `${cropForm.district}, ${cropForm.market}` : 'Not selected'}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="form-actions">
+                    <div className="action-buttons">
+                      <button type="button" className="btn-secondary" onClick={prevStep}>
+                        ← Back
+                      </button>
+                      <button
+                        type="submit"
+                        className="btn-primary"
+                        disabled={loading || backendStatus !== 'connected' || !cropForm.market}
+                      >
+                        {loading ? (
+                          <>
+                            <div className="spinner"></div>
+                            Adding Product...
+                          </>
+                        ) : (
+                          'Add Product to Marketplace'
+                        )}
                       </button>
                     </div>
-                  </div>
-
-                  <div className="card-body">
-                    {loadingAlerts ? (
-                      <div className="text-center py-3">
-                        <div className="spinner-border spinner-border-sm text-success" role="status">
-                          <span className="visually-hidden">Loading alerts...</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="demand-alerts-list">
-                          {demandAlerts.map(alert => {
-                            const demandBadge = getDemandBadge(alert.demand);
-                            return (
-                              <div key={alert.id} className="demand-alert-item card border-0 bg-light mb-3 transition-all">
-                                <div className="card-body p-3">
-                                  <div className="d-flex justify-content-between align-items-start mb-2">
-                                    <div>
-                                      <h6 className="mb-1 fw-bold text-dark">{alert.crop}</h6>
-                                      <small className="text-muted">
-                                        <i className="bi bi-geo-alt me-1"></i>
-                                        {alert.location}
-                                      </small>
-                                    </div>
-                                    <span className={`badge ${
-                                      alert.demand === 'high' ? 'bg-success' : 
-                                      alert.demand === 'medium' ? 'bg-warning' : 'bg-danger'
-                                    }`}>
-                                      {demandBadge.text}
-                                    </span>
-                                  </div>
-                                  <div className="d-flex justify-content-between align-items-center">
-                                    <span className="fw-bold text-success fs-6">{alert.price}</span>
-                                    <span className={`fs-5 ${
-                                      alert.trend === 'up' ? 'text-success' : 'text-muted'
-                                    }`}>
-                                      {alert.trend === 'up' ? '📈' : '➡️'}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        <button className="btn btn-outline-success w-100 mt-3">
-                          <i className="bi bi-arrow-right me-2"></i>
-                          View All Alerts
-                        </button>
-                      </>
-                    )}
+                    <span className="action-hint">
+                      Your product will be visible to buyers across the platform
+                    </span>
                   </div>
                 </div>
-
-                {/* Quick Stats Card */}
-                <div className="card stats-card shadow-lg border-0 rounded-4">
-                  <div className="card-header bg-transparent border-bottom-0 py-4">
-                    <h3 className="h5 mb-0 text-success">
-                      <i className="bi bi-speedometer2 me-2"></i>
-                      Live Market Overview
-                    </h3>
-                  </div>
-                  <div className="card-body">
-                    <div className="row text-center g-3">
-                      <div className="col-6">
-                        <div className="p-3 bg-success bg-opacity-10 rounded-3">
-                          <i className="bi bi-arrow-up-circle fs-4 text-success d-block mb-2"></i>
-                          <div className="fw-bold text-dark">
-                            {marketStats?.priceRise || '12%'}
-                          </div>
-                          <small className="text-muted">Price Rise</small>
-                        </div>
-                      </div>
-                      <div className="col-6">
-                        <div className="p-3 bg-warning bg-opacity-10 rounded-3">
-                          <i className="bi bi-graph-up-arrow fs-4 text-warning d-block mb-2"></i>
-                          <div className="fw-bold text-dark">
-                            {marketStats?.highDemand || '45%'}
-                          </div>
-                          <small className="text-muted">High Demand</small>
-                        </div>
-                      </div>
-                      <div className="col-6">
-                        <div className="p-3 bg-info bg-opacity-10 rounded-3">
-                          <i className="bi bi-calendar-check fs-4 text-info d-block mb-2"></i>
-                          <div className="fw-bold text-dark">
-                            {marketStats?.bestSeason || '30d'}
-                          </div>
-                          <small className="text-muted">Best Season</small>
-                        </div>
-                      </div>
-                      <div className="col-6">
-                        <div className="p-3 bg-primary bg-opacity-10 rounded-3">
-                          <i className="bi bi-people fs-4 text-primary d-block mb-2"></i>
-                          <div className="fw-bold text-dark">
-                            {marketStats?.activeFarmers || '85%'}
-                          </div>
-                          <small className="text-muted">Farmers Active</small>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+              )}
+            </form>
           </div>
         </div>
-
-        {/* Selected Crop Details Modal */}
-        {selectedCrop && (
-          <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} tabIndex="-1">
-            <div className="modal-dialog modal-lg modal-dialog-centered">
-              <div className="modal-content border-0 shadow-lg rounded-4">
-                <div className="modal-header bg-success text-white border-0 rounded-top-4">
-                  <h5 className="modal-title">
-                    <i className="bi bi-info-circle me-2"></i>
-                    {selectedCrop.name} - Detailed Analysis
-                  </h5>
-                  <button
-                    type="button"
-                    className="btn-close btn-close-white"
-                    onClick={() => setSelectedCrop(null)}
-                  ></button>
-                </div>
-                <div className="modal-body">
-                  <div className="row g-4">
-                    <div className="col-md-6">
-                      <div className="card border-0 bg-light h-100">
-                        <div className="card-body">
-                          <h6 className="card-title text-success">
-                            <i className="bi bi-graph-up me-2"></i>
-                            Market Analysis
-                          </h6>
-                          <p className="card-text text-muted">
-                            Current market conditions favor {selectedCrop.name} due to increasing demand in urban areas.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <div className="card border-0 bg-light h-100">
-                        <div className="card-body">
-                          <h6 className="card-title text-success">
-                            <i className="bi bi-cloud-sun me-2"></i>
-                            Weather Suitability
-                          </h6>
-                          <p className="card-text text-muted">
-                            Perfect for current monsoon patterns in Maharashtra.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <div className="card border-0 bg-light h-100">
-                        <div className="card-body">
-                          <h6 className="card-title text-success">
-                            <i className="bi bi-cash-coin me-2"></i>
-                            Investment Required
-                          </h6>
-                          <p className="card-text text-muted">
-                            Approximately ₹15,000 per acre for seeds and fertilizers.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <div className="card border-0 bg-light h-100">
-                        <div className="card-body">
-                          <h6 className="card-title text-success">
-                            <i className="bi bi-shop me-2"></i>
-                            Market Channels
-                          </h6>
-                          <p className="card-text text-muted">
-                            Direct to retailers in Pune and Mumbai markets available.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="modal-footer border-0 rounded-bottom-4">
-                  <button className="btn btn-success me-2">
-                    <i className="bi bi-clipboard-check me-2"></i>
-                    Create Farming Plan
-                  </button>
-                  <button className="btn btn-outline-primary">
-                    <i className="bi bi-telephone me-2"></i>
-                    Connect with Experts
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-
-      {/* Bootstrap JS CDN */}
-      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     </div>
   );
 };
