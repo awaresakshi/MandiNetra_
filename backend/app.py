@@ -1,8 +1,10 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
+from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
+from werkzeug.utils import secure_filename
 import pickle
 import numpy as np
 from datetime import datetime
-from flask_cors import CORS
 import os
 import logging
 import random
@@ -14,6 +16,19 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:3000"])
 
+# Database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:mandinetra123@localhost/mandinetra'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# Initialize database
+db = SQLAlchemy(app)
+
+# Create uploads directory if it doesn't exist
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
+
 # Commodity configuration
 COMMODITY_CONFIG = {
     'bajra': {
@@ -24,13 +39,29 @@ COMMODITY_CONFIG = {
         'color': 'green',
         'icon': '🌾'
     },
-    'wheat': {
-        'name': 'Wheat',
-        'display_name': '🌾 Wheat', 
-        'default_p_min': 2000,
-        'default_p_max': 2800,
-        'color': 'amber',
-        'icon': '🌾'
+    'brinjal': {
+        'name': 'Brinjal',
+        'display_name': '🍆 Brinjal',
+        'default_p_min': 1500,
+        'default_p_max': 3500,
+        'color': 'purple',
+        'icon': '🍆'
+    },
+    'cabbage': {
+        'name': 'Cabbage',
+        'display_name': '🥬 Cabbage',
+        'default_p_min': 800,
+        'default_p_max': 2000,
+        'color': 'green',
+        'icon': '🥬'
+    },
+    'chikoo': {
+        'name': 'Chikoo',
+        'display_name': '🍈 Chikoo',
+        'default_p_min': 3000,
+        'default_p_max': 6000,
+        'color': 'brown',
+        'icon': '🍈'
     },
     'cotton': {
         'name': 'Cotton',
@@ -40,30 +71,6 @@ COMMODITY_CONFIG = {
         'color': 'blue',
         'icon': '🧵'
     },
-    'jowar': {
-        'name': 'Jowar',
-        'display_name': '🌾 Jowar',
-        'default_p_min': 1900,
-        'default_p_max': 2600, 
-        'color': 'purple',
-        'icon': '🌾'
-    },
-    'rice': {
-        'name': 'Rice',
-        'display_name': '🍚 Rice',
-        'default_p_min': 2500,
-        'default_p_max': 5000,
-        'color': 'red',
-        'icon': '🍚'
-    },
-    'chikoo': {
-        'name': 'Chikoo',
-        'display_name': '🥭 Chikoo',
-        'default_p_min': 3000,
-        'default_p_max': 6000,
-        'color': 'green',
-        'icon': '🥭'
-    },
     'grapes': {
         'name': 'Grapes',
         'display_name': '🍇 Grapes',
@@ -72,6 +79,22 @@ COMMODITY_CONFIG = {
         'color': 'purple',
         'icon': '🍇'
     },
+    'greenchilli': {
+        'name': 'Green Chilli',
+        'display_name': '🌶️ Green Chilli',
+        'default_p_min': 2000,
+        'default_p_max': 5000,
+        'color': 'red',
+        'icon': '🌶️'
+    },
+    'jowar': {
+        'name': 'Jowar',
+        'display_name': '🌾 Jowar',
+        'default_p_min': 1900,
+        'default_p_max': 2600, 
+        'color': 'amber',
+        'icon': '🌾'
+    },
     'mangos': {
         'name': 'Mangoes',
         'display_name': '🥭 Mangoes',
@@ -79,6 +102,14 @@ COMMODITY_CONFIG = {
         'default_p_max': 5000,
         'color': 'orange',
         'icon': '🥭'
+    },
+    'onion': {
+        'name': 'Onion',
+        'display_name': '🧅 Onion',
+        'default_p_min': 1000,
+        'default_p_max': 3000,
+        'color': 'purple',
+        'icon': '🧅'
     },
     'orange': {
         'name': 'Orange',
@@ -93,8 +124,32 @@ COMMODITY_CONFIG = {
         'display_name': '🍈 Papaya',
         'default_p_min': 1500,
         'default_p_max': 3000,
-        'color': 'yellow',
+        'color': 'orange',
         'icon': '🍈'
+    },
+    'rice': {
+        'name': 'Rice',
+        'display_name': '🍚 Rice',
+        'default_p_min': 2500,
+        'default_p_max': 5000,
+        'color': 'white',
+        'icon': '🍚'
+    },
+    'tomato': {
+        'name': 'Tomato',
+        'display_name': '🍅 Tomato',
+        'default_p_min': 1200,
+        'default_p_max': 4000,
+        'color': 'red',
+        'icon': '🍅'
+    },
+    'wheat': {
+        'name': 'Wheat',
+        'display_name': '🌾 Wheat', 
+        'default_p_min': 2000,
+        'default_p_max': 2800,
+        'color': 'amber',
+        'icon': '🌾'
     }
 }
 
@@ -103,56 +158,96 @@ COMMODITY_FILES = {
     'bajra': {
         'model': './models/bajra_model.pkl',
         'preprocessor': './models/bajra_preprocessor.pkl',
-        'district_encoder': './models/Bajradistrict_encoder.pkl'
+        'district_encoder': './models/Bajradistrict_encoder.pkl',
+        'market_encoder': './models/Bajramarket_encoder.pkl'
     },
-    'wheat': {
-        'model': './models/wheat_model.pkl',
-        'preprocessor': './models/wheat_preprocessor.pkl',
-        'district_encoder': './models/Wheatdistrict_encoder.pkl'
+    'brinjal': {
+        'model': './models/brinjal_model.joblib',
+        'preprocessor': None,
+        'district_encoder': './models/brinjaldistrict_encoder.pkl',
+        'market_encoder': './models/brinjalmart_encoder.pkl'
     },
-    'cotton': {
-        'model': './models/cotton_model.pkl',
-        'preprocessor': './models/cotton_preprocessor.pkl',
-        'district_encoder': './models/Cottondistrict_encoder.pkl'
-    },
-    'jowar': {
-        'model': './models/jowar_model.pkl',
-        'preprocessor': './models/jowar_preprocessor.pkl',
-        'district_encoder': './models/Jowardistrict_encoder.pkl'
-    },
-    'rice': {
-        'model': './models/rice_model.pkl',
-        'preprocessor': './models/rice_preprocessor.pkl',
-        'district_encoder': './models/Ricedistrict_encoder.pkl'
+    'cabbage': {
+        'model': './models/cabbage_model.pkl',
+        'preprocessor': './models/cabbage_preprocessor.pkl',
+        'district_encoder': './models/cabbagedistrict_encoder.pkl',
+        'market_encoder': './models/cabbagemarket_encoder.pkl'
     },
     'chikoo': {
         'model': './models/chikoo_model.pkl',
         'preprocessor': './models/chikoo_preprocessor.pkl',
-        'district_encoder': './models/chikoodistrict_encoder.pkl'
+        'district_encoder': './models/chikoodistrict_encoder.pkl',
+        'market_encoder': './models/chikoomarket_encoder.pkl'
+    },
+    'cotton': {
+        'model': './models/cotton_model.pkl',
+        'preprocessor': './models/cotton_preprocessor.pkl',
+        'district_encoder': './models/Cottondistrict_encoder.pkl',
+        'market_encoder': './models/Cottonmarket_encoder.pkl'
     },
     'grapes': {
         'model': './models/grapes_model.pkl',
         'preprocessor': './models/grapes_preprocessor.pkl',
-        'district_encoder': './models/grapesdistrict_encoder.pkl'
+        'district_encoder': './models/grapesdistrict_encoder.pkl',
+        'market_encoder': './models/grapesmarket_encoder.pkl'
+    },
+    'greenchilli': {
+        'model': './models/greenchilli_model.pkl',
+        'preprocessor': './models/greenchilli_preprocessor.pkl',
+        'district_encoder': './models/greenchillidistrict_encoder.pkl',
+        'market_encoder': './models/greenchillimarket_encoder.pkl'
+    },
+    'jowar': {
+        'model': './models/jowar_model.pkl',
+        'preprocessor': None,
+        'district_encoder': './models/Jowardistrict_encoder.pkl',
+        'market_encoder': './models/Jowarmarket_encoder.pkl'
     },
     'mangos': {
         'model': './models/mangos_model.pkl',
         'preprocessor': './models/mangos_preprocessor.pkl',
-        'district_encoder': './models/mangosdistrict_encoder.pkl'
+        'district_encoder': './models/mangosdistrict_encoder.pkl',
+        'market_encoder': './models/mangosmarket_encoder.pkl'
+    },
+    'onion': {
+        'model': './models/onion_model.pkl',
+        'preprocessor': './models/onion_preprocessor.pkl',
+        'district_encoder': './models/oniondistrict_encoder.pkl',
+        'market_encoder': './models/onionmarket_encoder.pkl'
     },
     'orange': {
         'model': './models/orange_model.pkl',
         'preprocessor': './models/orange_preprocessor.pkl',
-        'district_encoder': './models/orangedistrict_encoder.pkl'
+        'district_encoder': './models/orangedistrict_encoder.pkl',
+        'market_encoder': './models/orangemarket_encoder.pkl'
     },
     'papaya': {
         'model': './models/papaya_model.pkl',
         'preprocessor': './models/papaya_preprocessor.pkl',
-        'district_encoder': './models/papayadistrict_encoder.pkl'
+        'district_encoder': './models/papayadistrict_encoder.pkl',
+        'market_encoder': './models/papayamarket_encoder.pkl'
+    },
+    'rice': {
+        'model': './models/rice_model.pkl',
+        'preprocessor': './models/rice_preprocessor.pkl',
+        'district_encoder': './models/Ricedistrict_encoder.pkl',
+        'market_encoder': './models/Ricemarket_encoder.pkl'
+    },
+    'tomato': {
+        'model': './models/tomato_model.pkl',
+        'preprocessor': './models/tomato_preprocessor.pkl',
+        'district_encoder': './models/tomatodistrict_encoder.pkl',
+        'market_encoder': './models/tomatomarket_encoder.pkl'
+    },
+    'wheat': {
+        'model': './models/wheat_model.pkl',
+        'preprocessor': './models/wheat_preprocessor.pkl',
+        'district_encoder': './models/Wheatdistrict_encoder.pkl',
+        'market_encoder': './models/Wheatmarket_encoder.pkl'
     }
 }
 
-# Maharashtra districts and markets - EXPANDED WITH NAGPUR
+# Maharashtra districts and markets
 DISTRICT_TO_MARKETS = {
     'ahmadnagar': {
         'district_name': 'Ahmadnagar',
@@ -243,6 +338,30 @@ DISTRICT_TO_MARKETS = {
         'markets': ['Thane', 'Kalyan'],
         'district_id': 514,
         'market_id': 1114
+    },
+    'mumbai': {
+        'district_name': 'Mumbai',
+        'markets': ['Mumbai'],
+        'district_id': 515,
+        'market_id': 1115
+    },
+    'solapur': {
+        'district_name': 'Solapur',
+        'markets': ['Solapur'],
+        'district_id': 516,
+        'market_id': 1116
+    },
+    'sangli': {
+        'district_name': 'Sangli',
+        'markets': ['Sangli'],
+        'district_id': 517,
+        'market_id': 1117
+    },
+    'satara': {
+        'district_name': 'Satara',
+        'markets': ['Satara'],
+        'district_id': 518,
+        'market_id': 1118
     }
 }
 
@@ -263,7 +382,7 @@ for commodity, files in COMMODITY_FILES.items():
         # Check if essential files exist
         missing_files = []
         for file_type, file_path in files.items():
-            if not os.path.exists(file_path):
+            if file_path and not os.path.exists(file_path):
                 missing_files.append(f"{file_type}: {file_path}")
         
         if missing_files:
@@ -271,23 +390,45 @@ for commodity, files in COMMODITY_FILES.items():
             continue
             
         # Load files
-        with open(files['model'], "rb") as f:
-            model = pickle.load(f)
-        with open(files['preprocessor'], "rb") as f:
-            preprocessor = pickle.load(f)
-        with open(files['district_encoder'], "rb") as f:
-            district_encoder = pickle.load(f)
+        model_data = {}
         
-        COMMODITY_MODELS[commodity] = {
-            'model': model,
-            'preprocessor': preprocessor,
-            'district_encoder': district_encoder
-        }
+        # Load model (handle .joblib for brinjal)
+        if commodity == 'brinjal':
+            try:
+                import joblib
+                with open(files['model'], "rb") as f:
+                    model_data['model'] = joblib.load(f)
+            except ImportError:
+                logger.error("❌ joblib not installed for brinjal model")
+                continue
+        else:
+            with open(files['model'], "rb") as f:
+                model_data['model'] = pickle.load(f)
+        
+        # Load preprocessor if available
+        if files['preprocessor']:
+            with open(files['preprocessor'], "rb") as f:
+                model_data['preprocessor'] = pickle.load(f)
+        else:
+            model_data['preprocessor'] = None
+        
+        # Load district encoder
+        with open(files['district_encoder'], "rb") as f:
+            model_data['district_encoder'] = pickle.load(f)
+        
+        # Load market encoder if available
+        if files['market_encoder']:
+            with open(files['market_encoder'], "rb") as f:
+                model_data['market_encoder'] = pickle.load(f)
+        else:
+            model_data['market_encoder'] = None
+        
+        COMMODITY_MODELS[commodity] = model_data
         available_commodities.append(commodity)
         
         # Store the districts this commodity knows
-        if hasattr(district_encoder, 'classes_'):
-            COMMODITY_DISTRICTS[commodity] = [district.strip() for district in district_encoder.classes_]
+        if hasattr(model_data['district_encoder'], 'classes_'):
+            COMMODITY_DISTRICTS[commodity] = [district.strip() for district in model_data['district_encoder'].classes_]
             logger.info(f"✅ {commodity} loaded with {len(COMMODITY_DISTRICTS[commodity])} districts")
         else:
             COMMODITY_DISTRICTS[commodity] = []
@@ -298,9 +439,10 @@ for commodity, files in COMMODITY_FILES.items():
 
 logger.info(f"🌾 Available commodities: {available_commodities}")
 
-# Debug: Check what districts orange model knows
-if 'orange' in COMMODITY_DISTRICTS:
-    logger.info(f"🍊 Orange model knows these districts: {COMMODITY_DISTRICTS['orange']}")
+# Debug: Check what districts each model knows
+for commodity in available_commodities:
+    if commodity in COMMODITY_DISTRICTS:
+        logger.info(f"📊 {commodity} model knows these districts: {COMMODITY_DISTRICTS[commodity]}")
 
 @app.route("/")
 def home():
@@ -311,6 +453,310 @@ def home():
         "available_commodities": available_commodities,
         "total_commodities": len(available_commodities)
     })
+
+# ==================== FARMER ENDPOINTS ====================
+
+@app.route('/api/farmers', methods=['POST'])
+def create_farmer():
+    """Create a new farmer"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+            
+        name = data.get('name')
+        phone = data.get('phone')
+        district = data.get('district')
+        taluka = data.get('taluka')
+        
+        # Validate required fields
+        if not all([name, phone, district]):
+            return jsonify({'error': 'Missing required fields: name, phone, district'}), 400
+        
+        # Check if phone already exists
+        existing_farmer = db.session.execute(
+            db.text("SELECT farmer_id FROM farmers WHERE phone = :phone"),
+            {'phone': phone}
+        ).fetchone()
+        
+        if existing_farmer:
+            return jsonify({
+                'error': f'Farmer with phone number {phone} already exists',
+                'farmer_id': existing_farmer[0]
+            }), 400
+        
+        # Insert new farmer
+        insert_query = """
+        INSERT INTO farmers (name, phone, district, taluka)
+        VALUES (:name, :phone, :district, :taluka)
+        """
+        
+        db.session.execute(db.text(insert_query), {
+            'name': name,
+            'phone': phone,
+            'district': district,
+            'taluka': taluka
+        })
+        
+        db.session.commit()
+        
+        # Get the new farmer ID
+        farmer_id = db.session.execute(db.text("SELECT LAST_INSERT_ID()")).fetchone()[0]
+        
+        logger.info(f"✅ Farmer created successfully: ID {farmer_id}, Name: {name}, Phone: {phone}")
+
+        return jsonify({
+            'message': 'Farmer created successfully',
+            'farmer_id': farmer_id,
+            'name': name,
+            'phone': phone
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"❌ Error creating farmer: {str(e)}")
+        return jsonify({'error': f'Failed to create farmer: {str(e)}'}), 500
+
+@app.route('/api/farmers', methods=['GET'])
+def get_farmers():
+    """Get all farmers or search by phone"""
+    try:
+        phone = request.args.get('phone')
+        
+        if phone:
+            # Search farmer by phone
+            query = "SELECT * FROM farmers WHERE phone = :phone"
+            result = db.session.execute(db.text(query), {'phone': phone})
+        else:
+            # Get all farmers
+            query = "SELECT * FROM farmers ORDER BY created_at DESC"
+            result = db.session.execute(db.text(query))
+        
+        farmers = []
+        
+        for row in result:
+            farmers.append({
+                'farmer_id': row.farmer_id,
+                'name': row.name,
+                'phone': row.phone,
+                'district': row.district,
+                'taluka': row.taluka,
+                'created_at': row.created_at.isoformat() if row.created_at else None
+            })
+        
+        return jsonify({
+            'farmers': farmers,
+            'count': len(farmers)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching farmers: {str(e)}")
+        return jsonify({'error': 'Failed to fetch farmers'}), 500
+
+@app.route('/api/farmers/<int:farmer_id>', methods=['GET'])
+def get_farmer(farmer_id):
+    """Get a specific farmer by ID"""
+    try:
+        query = "SELECT * FROM farmers WHERE farmer_id = :farmer_id"
+        result = db.session.execute(db.text(query), {'farmer_id': farmer_id})
+        farmer = result.fetchone()
+        
+        if not farmer:
+            return jsonify({'error': 'Farmer not found'}), 404
+        
+        return jsonify({
+            'farmer_id': farmer.farmer_id,
+            'name': farmer.name,
+            'phone': farmer.phone,
+            'district': farmer.district,
+            'taluka': farmer.taluka,
+            'created_at': farmer.created_at.isoformat() if farmer.created_at else None
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching farmer: {str(e)}")
+        return jsonify({'error': 'Failed to fetch farmer'}), 500
+
+# ==================== PRODUCTS ENDPOINTS ====================
+
+@app.route('/api/products', methods=['POST'])
+def add_product():
+    """Add a new product to the marketplace"""
+    try:
+        # Check if image file is present
+        image_url = None
+        if 'crop_image' in request.files:
+            image_file = request.files['crop_image']
+            if image_file and image_file.filename != '':
+                # Secure the filename and save
+                filename = secure_filename(image_file.filename)
+                image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                image_file.save(image_path)
+                image_url = f"/uploads/{filename}"
+        
+        # Get form data
+        crop_name = request.form.get('crop_name')
+        crop_type = request.form.get('crop_type')
+        quantity = request.form.get('quantity')
+        unit = request.form.get('unit')
+        expected_price = request.form.get('expected_price')
+        district = request.form.get('district')
+        market = request.form.get('market')
+        harvest_date = request.form.get('harvest_date')
+        farmer_id = request.form.get('farmer_id')
+
+        # Validate required fields
+        if not all([crop_name, quantity, expected_price, district, farmer_id]):
+            return jsonify({'error': 'Missing required fields: crop_name, quantity, expected_price, district, farmer_id'}), 400
+
+        # Convert quantity and price to appropriate types
+        try:
+            quantity_float = float(quantity)
+            expected_price_float = float(expected_price)
+        except ValueError:
+            return jsonify({'error': 'Invalid quantity or price format'}), 400
+
+        # Check if farmer exists
+        farmer_exists = db.session.execute(
+            db.text("SELECT farmer_id FROM farmers WHERE farmer_id = :farmer_id"),
+            {'farmer_id': farmer_id}
+        ).fetchone()
+
+        if not farmer_exists:
+            return jsonify({'error': 'Farmer not found'}), 404
+
+        # Insert product into database
+        insert_query = """
+        INSERT INTO products 
+        (farmer_id, crop_name, crop_type, district, market, quantity, unit, expected_price, image_url, harvest_date)
+        VALUES 
+        (:farmer_id, :crop_name, :crop_type, :district, :market, :quantity, :unit, :expected_price, :image_url, :harvest_date)
+        """
+
+        result = db.session.execute(db.text(insert_query), {
+            'farmer_id': int(farmer_id),
+            'crop_name': crop_name,
+            'crop_type': crop_type,
+            'district': district,
+            'market': market,
+            'quantity': quantity_float,
+            'unit': unit,
+            'expected_price': expected_price_float,
+            'image_url': image_url,
+            'harvest_date': harvest_date
+        })
+
+        db.session.commit()
+
+        # Get the last inserted ID
+        product_id = db.session.execute(db.text("SELECT LAST_INSERT_ID()")).fetchone()[0]
+
+        logger.info(f"✅ Product added successfully: ID {product_id}, Crop: {crop_name}, Farmer: {farmer_id}")
+
+        return jsonify({
+            'message': 'Product added successfully',
+            'product_id': product_id,
+            'crop_name': crop_name,
+            'farmer_id': farmer_id
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"❌ Error adding product: {str(e)}")
+        return jsonify({'error': f'Failed to add product: {str(e)}'}), 500
+
+@app.route('/uploads/<filename>')
+def serve_image(filename):
+    """Serve uploaded images"""
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/api/farmers/<int:farmer_id>/products', methods=['GET'])
+def get_farmer_products(farmer_id):
+    """Get all products for a specific farmer"""
+    try:
+        # Query to get products with farmer details
+        query = """
+        SELECT p.*, f.name as farmer_name, f.phone, f.district as farmer_district
+        FROM products p
+        JOIN farmers f ON p.farmer_id = f.farmer_id
+        WHERE p.farmer_id = :farmer_id
+        ORDER BY p.created_at DESC
+        """
+        
+        result = db.session.execute(db.text(query), {'farmer_id': farmer_id})
+        products = []
+        
+        for row in result:
+            products.append({
+                'product_id': row.product_id,
+                'crop_name': row.crop_name,
+                'crop_type': row.crop_type,
+                'district': row.district,
+                'market': row.market,
+                'quantity': row.quantity,
+                'unit': row.unit,
+                'expected_price': float(row.expected_price),
+                'image_url': row.image_url,
+                'harvest_date': row.harvest_date.isoformat() if row.harvest_date else None,
+                'created_at': row.created_at.isoformat() if row.created_at else None,
+                'farmer_name': row.farmer_name,
+                'farmer_phone': row.phone
+            })
+        
+        return jsonify({
+            'products': products,
+            'count': len(products),
+            'farmer_id': farmer_id
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching farmer products: {str(e)}")
+        return jsonify({'error': 'Failed to fetch products'}), 500
+
+@app.route('/api/products', methods=['GET'])
+def get_all_products():
+    """Get all products from marketplace"""
+    try:
+        query = """
+        SELECT p.*, f.name as farmer_name, f.phone, f.district as farmer_district
+        FROM products p
+        JOIN farmers f ON p.farmer_id = f.farmer_id
+        ORDER BY p.created_at DESC
+        """
+        
+        result = db.session.execute(db.text(query))
+        products = []
+        
+        for row in result:
+            products.append({
+                'product_id': row.product_id,
+                'crop_name': row.crop_name,
+                'crop_type': row.crop_type,
+                'district': row.district,
+                'market': row.market,
+                'quantity': row.quantity,
+                'unit': row.unit,
+                'expected_price': float(row.expected_price),
+                'image_url': row.image_url,
+                'harvest_date': row.harvest_date.isoformat() if row.harvest_date else None,
+                'created_at': row.created_at.isoformat() if row.created_at else None,
+                'farmer_name': row.farmer_name,
+                'farmer_phone': row.phone,
+                'farmer_district': row.farmer_district
+            })
+        
+        return jsonify({
+            'products': products,
+            'count': len(products),
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching all products: {str(e)}")
+        return jsonify({'error': 'Failed to fetch products'}), 500
+
+# ==================== EXISTING PREDICTION ENDPOINTS ====================
 
 @app.route('/api/commodities', methods=['GET'])
 def get_commodities():
@@ -481,10 +927,23 @@ def predict():
                 "error": f"District '{district_info['district_name']}' not available for {commodity}. Available districts: {available_for_commodity}"
             }), 400
         
+        # Encode market if market encoder is available
+        market_encoded = 0
+        if model_data['market_encoder']:
+            try:
+                market_name_clean = market_input.replace('_', ' ').title()
+                market_encoded = model_data['market_encoder'].transform([market_name_clean])[0]
+                logger.info(f"🔢 Market '{market_name_clean}' encoded as: {market_encoded}")
+            except Exception as e:
+                logger.warning(f"Market encoding failed, using default: {str(e)}")
+                market_encoded = district_info['market_id']
+        else:
+            market_encoded = district_info['market_id']
+        
         # Prepare features
         current_date = datetime.now()
         features = np.array([[
-            district_info['market_id'],
+            market_encoded,
             STATE_ID,
             district_info['district_id'],
             config['default_p_min'],
@@ -495,10 +954,15 @@ def predict():
             district_encoded
         ]])
         
+        # Transform features if preprocessor is available
+        if model_data['preprocessor']:
+            prepared_features = model_data['preprocessor'].transform(features)
+        else:
+            prepared_features = features
+        
         # Predict
-        prepared_features = model_data['preprocessor'].transform(features)
         prediction = model_data['model'].predict(prepared_features)
-        predicted_price = max(0, round(float(prediction[0]), 2))  # Ensure non-negative price
+        predicted_price = max(0, round(float(prediction[0]), 2))
         
         logger.info(f"✅ Prediction successful: ₹{predicted_price} for {commodity} in {district_info['district_name']}")
         
@@ -540,16 +1004,7 @@ def health_check():
         "all_districts": list(DISTRICT_TO_MARKETS.keys())
     })
 
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({"error": "Endpoint not found"}), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    return jsonify({"error": "Internal server error"}), 500
-
-# Add these endpoints to your existing Flask app
-
+# Additional endpoints
 @app.route('/api/crop-suggestions', methods=['POST'])
 def get_crop_suggestions():
     """Get AI-powered crop suggestions based on season and region"""
@@ -559,8 +1014,6 @@ def get_crop_suggestions():
         region = data.get('region', 'Maharashtra')
         soil_type = data.get('soil_type', 'black_cotton')
         
-        # This would typically call your ML model for crop suggestions
-        # For now, returning dynamic suggestions based on season
         suggestions = generate_crop_suggestions(season, region, soil_type)
         
         return jsonify({
@@ -578,7 +1031,6 @@ def get_crop_suggestions():
 def get_demand_alerts():
     """Get real-time demand alerts for various crops"""
     try:
-        # This would typically fetch from a real-time database or external API
         alerts = generate_demand_alerts()
         
         return jsonify({
@@ -594,7 +1046,6 @@ def get_demand_alerts():
 def get_market_stats():
     """Get real-time market statistics"""
     try:
-        # Simulate real-time stats - replace with actual data source
         stats = {
             "priceRise": f"{random.randint(8, 15)}%",
             "highDemand": f"{random.randint(40, 60)}%",
@@ -612,37 +1063,6 @@ def get_market_stats():
     except Exception as e:
         logger.error(f"Error fetching market stats: {str(e)}")
         return jsonify({"error": "Failed to fetch market stats"}), 500
-
-@app.route('/api/analyze-crop-health', methods=['POST'])
-def analyze_crop_health():
-    """Analyze crop health from uploaded image"""
-    try:
-        if 'crop_image' not in request.files:
-            return jsonify({"error": "No image file provided"}), 400
-            
-        image_file = request.files['crop_image']
-        
-        # Here you would integrate with your computer vision model
-        # For now, returning mock analysis
-        analysis = {
-            "health_score": random.randint(75, 95),
-            "disease_detected": random.choice([None, "leaf_rust", "powdery_mildew"]),
-            "nutrient_deficiency": random.choice([None, "nitrogen", "potassium"]),
-            "recommendations": [
-                "Crop is in good health",
-                "Consider adding organic fertilizer",
-                "Monitor for pest activity"
-            ]
-        }
-        
-        return jsonify({
-            "analysis": analysis,
-            "timestamp": datetime.now().isoformat()
-        })
-        
-    except Exception as e:
-        logger.error(f"Error analyzing crop health: {str(e)}")
-        return jsonify({"error": "Failed to analyze crop image"}), 500
 
 def generate_crop_suggestions(season, region, soil_type):
     """Generate crop suggestions based on parameters"""
@@ -712,16 +1132,27 @@ def generate_demand_alerts():
     
     return alerts
 
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({"error": "Endpoint not found"}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({"error": "Internal server error"}), 500
+
 if __name__ == '__main__':
     print(f"\n🎯 Multi-Commodity Price Prediction API Ready!")
     print(f"🌾 Available commodities: {available_commodities}")
     print(f"📍 Total districts in database: {len(DISTRICT_TO_MARKETS)}")
     print(f"🏪 Available districts: {list(DISTRICT_TO_MARKETS.keys())}")
+    print(f"📦 Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
+    print(f"📁 Upload folder: {app.config['UPLOAD_FOLDER']}")
     print(f"🚀 Backend running on: http://127.0.0.1:5000")
     print(f"🌐 React app should connect from: http://localhost:3000")
     
-    # Debug info for orange commodity
-    if 'orange' in COMMODITY_DISTRICTS:
-        print(f"🍊 Orange districts: {COMMODITY_DISTRICTS['orange']}")
+    # Debug info for all commodities
+    for commodity in available_commodities:
+        if commodity in COMMODITY_DISTRICTS:
+            print(f"📊 {commodity} districts: {COMMODITY_DISTRICTS[commodity]}")
     
     app.run(debug=True, port=5000)
