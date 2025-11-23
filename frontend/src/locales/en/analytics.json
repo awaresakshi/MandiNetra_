@@ -1,0 +1,66 @@
+{
+  "header": {
+    "title": "Price Analytics",
+    "description": "Advanced market intelligence and price trend analysis"
+  },
+  "filters": {
+    "commodity": "Commodity",
+    "district": "District",
+    "market": "Market",
+    "timeRange": "Time Range",
+    "refreshData": "Refresh Data"
+  },
+  "timeRanges": {
+    "1month": "1 Month",
+    "3months": "3 Months",
+    "6months": "6 Months",
+    "1year": "1 Year"
+  },
+  "chart": {
+    "priceTrends": "Price Trends",
+    "currentPrice": "Current Price",
+    "perQuintal": "per quintal",
+    "priceChange": "Price Change",
+    "volatility": "Volatility",
+    "marketSentiment": "Market Sentiment"
+  },
+  "insights": {
+    "title": "Market Insights",
+    "demand": "High Demand Alert",
+    "supply": "Supply Chain Update",
+    "weather": "Weather Impact",
+    "market": "Export Opportunities",
+    "trend": "Price Trend",
+    "volatility": "Market Stability",
+    "seasonal": "Seasonal Analysis",
+    "positive": "Positive",
+    "neutral": "Neutral",
+    "confidence": "confidence"
+  },
+  "comparison": {
+    "title": "Market Comparison",
+    "bestDeal": "Best Deal",
+    "market": "Market",
+    "price": "Price",
+    "change": "Change"
+  },
+  "trending": {
+    "title": "Trending Commodities",
+    "updated": "Updated 5 min ago",
+    "commodity": "Commodity",
+    "trend": "Trend",
+    "currentPrice": "Current Price",
+    "change": "Change",
+    "reason": "Reason",
+    "rising": "rising",
+    "falling": "falling",
+    "stable": "stable"
+  },
+  "loading": {
+    "message": "Loading market analytics..."
+  },
+  "noData": {
+    "message": "No data available",
+    "description": "Select a commodity, district, and market to view price trends"
+  }
+}

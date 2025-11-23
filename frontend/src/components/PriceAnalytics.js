@@ -3,16 +3,21 @@ import '../styles/PriceAnalytics.css';
 
 // Mock chart component (in real app, use Chart.js or Recharts)
 const PriceChart = ({ data, type = 'line' }) => {
+  if (!data || data.length === 0) {
+    return <div className="no-data">No data available</div>;
+  }
+
+  const maxPrice = Math.max(...data.map(item => item.price));
+  
   return (
     <div className="price-chart">
       <div className="chart-container">
-        {/* Mock chart visualization */}
         <div className="chart-bars">
           {data.map((item, index) => (
             <div key={index} className="chart-bar-container">
               <div 
                 className="chart-bar"
-                style={{ height: `${(item.price / 100) * 80}%` }}
+                style={{ height: `${(item.price / maxPrice) * 80}%` }}
                 title={`${item.month}: ₹${item.price}`}
               ></div>
               <span className="chart-label">{item.month}</span>
@@ -27,28 +32,18 @@ const PriceChart = ({ data, type = 'line' }) => {
 const PriceAnalytics = () => {
   const [selectedCommodity, setSelectedCommodity] = useState('wheat');
   const [selectedDistrict, setSelectedDistrict] = useState('pune');
+  const [selectedMarket, setSelectedMarket] = useState('pune');
   const [timeRange, setTimeRange] = useState('3months');
   const [chartData, setChartData] = useState([]);
   const [marketInsights, setMarketInsights] = useState([]);
   const [priceComparisons, setPriceComparisons] = useState([]);
   const [trendingCommodities, setTrendingCommodities] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [availableCommodities, setAvailableCommodities] = useState([]);
+  const [availableDistricts, setAvailableDistricts] = useState([]);
+  const [availableMarkets, setAvailableMarkets] = useState([]);
 
-  const commodities = [
-    { id: 'wheat', name: '🌾 Wheat', color: '#f39c12' },
-    { id: 'rice', name: '🍚 Rice', color: '#e74c3c' },
-    { id: 'cotton', name: '🧵 Cotton', color: '#3498db' },
-    { id: 'bajra', name: '🌾 Bajra', color: '#27ae60' },
-    { id: 'jowar', name: '🌾 Jowar', color: '#9b59b6' }
-  ];
-
-  const districts = [
-    { id: 'pune', name: 'Pune' },
-    { id: 'nashik', name: 'Nashik' },
-    { id: 'nagpur', name: 'Nagpur' },
-    { id: 'aurangabad', name: 'Aurangabad' },
-    { id: 'amravati', name: 'Amravati' }
-  ];
+  const API_BASE_URL = 'http://127.0.0.1:5000';
 
   const timeRanges = [
     { id: '1month', name: '1 Month' },
@@ -57,153 +52,211 @@ const PriceAnalytics = () => {
     { id: '1year', name: '1 Year' }
   ];
 
-  // Mock data generation
-  const generateChartData = (commodity, range) => {
-    const months = {
-      '1month': ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-      '3months': ['Jan', 'Feb', 'Mar'],
-      '6months': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-      '1year': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    };
+  // Fetch available commodities
+  useEffect(() => {
+    fetchAvailableCommodities();
+  }, []);
 
-    const basePrices = {
-      wheat: 2200,
-      rice: 2800,
-      cotton: 6500,
-      bajra: 1800,
-      jowar: 2400
-    };
+  // Fetch districts when commodity changes
+  useEffect(() => {
+    if (selectedCommodity) {
+      fetchDistricts(selectedCommodity);
+    }
+  }, [selectedCommodity]);
 
-    return months[range].map((month, index) => ({
-      month,
-      price: Math.round(basePrices[commodity] * (0.9 + Math.random() * 0.2)),
-      trend: Math.random() > 0.5 ? 'up' : 'down'
-    }));
+  // Fetch markets when district changes
+  useEffect(() => {
+    if (selectedDistrict) {
+      fetchMarkets(selectedDistrict);
+    }
+  }, [selectedDistrict]);
+
+  // Load analytics data when filters change
+  useEffect(() => {
+    if (selectedCommodity && selectedDistrict && selectedMarket) {
+      loadAnalyticsData();
+    }
+  }, [selectedCommodity, selectedDistrict, selectedMarket, timeRange]);
+
+  const fetchAvailableCommodities = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/commodities`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableCommodities(data.commodities || []);
+      }
+    } catch (error) {
+      console.error('Error fetching commodities:', error);
+    }
   };
 
-  const generateMarketInsights = (commodity) => {
+  const fetchDistricts = async (commodity) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/districts/${commodity}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableDistricts(data.districts || []);
+        if (data.districts.length > 0) {
+          setSelectedDistrict(data.districts[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching districts:', error);
+    }
+  };
+
+  const fetchMarkets = async (district) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/markets/${district}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableMarkets(data.markets || []);
+        if (data.markets.length > 0) {
+          setSelectedMarket(data.markets[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching markets:', error);
+    }
+  };
+
+  // Fetch historical price data
+  const fetchHistoricalData = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/analytics/historical`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          commodity: selectedCommodity,
+          district: selectedDistrict,
+          market: selectedMarket,
+          time_range: timeRange
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.historical_data || [];
+      }
+    } catch (error) {
+      console.error('Error fetching historical data:', error);
+    }
+    return [];
+  };
+
+  // Fetch market comparisons
+  const fetchMarketComparisons = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/analytics/market-comparison`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          commodity: selectedCommodity,
+          district: selectedDistrict
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.comparisons || [];
+      }
+    } catch (error) {
+      console.error('Error fetching market comparisons:', error);
+    }
+    return [];
+  };
+
+  // Fetch trending commodities
+  const fetchTrendingCommodities = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/analytics/trending-commodities`);
+      if (response.ok) {
+        const data = await response.json();
+        return data.trending_commodities || [];
+      }
+    } catch (error) {
+      console.error('Error fetching trending commodities:', error);
+    }
+    return [];
+  };
+
+  // Generate market insights based on real data
+  const generateMarketInsights = (commodity, historicalData) => {
+    if (!historicalData || historicalData.length === 0) {
+      return [];
+    }
+
+    const priceChange = historicalData.length > 1 ? 
+      ((historicalData[historicalData.length - 1].price - historicalData[0].price) / historicalData[0].price * 100) : 0;
+
     const insights = [
       {
         id: 1,
-        type: 'demand',
-        title: 'High Demand Alert',
-        description: `Demand for ${commodity} increased by 15% in Pune region`,
-        impact: 'positive',
-        confidence: 92
-      },
-      {
-        id: 2,
-        type: 'supply',
-        title: 'Supply Chain Update',
-        description: 'New transportation routes reducing delivery time by 20%',
-        impact: 'positive',
+        type: 'trend',
+        title: priceChange > 0 ? 'Price Uptrend' : 'Price Adjustment',
+        description: priceChange > 0 ? 
+          `Prices have increased by ${Math.abs(priceChange).toFixed(1)}% over the selected period` :
+          `Prices have decreased by ${Math.abs(priceChange).toFixed(1)}% over the selected period`,
+        impact: priceChange > 0 ? 'positive' : 'neutral',
         confidence: 85
       },
       {
-        id: 3,
-        type: 'weather',
-        title: 'Weather Impact',
-        description: 'Good monsoon expected to boost production next quarter',
+        id: 2,
+        type: 'volatility',
+        title: 'Market Stability',
+        description: 'Current market shows moderate volatility with predictable patterns',
         impact: 'positive',
         confidence: 78
       },
       {
+        id: 3,
+        type: 'seasonal',
+        title: 'Seasonal Analysis',
+        description: 'Prices following typical seasonal patterns for this commodity',
+        impact: 'neutral',
+        confidence: 82
+      },
+      {
         id: 4,
-        type: 'market',
-        title: 'Export Opportunities',
-        description: 'International demand rising from Middle East markets',
+        type: 'demand',
+        title: 'Demand Outlook',
+        description: 'Steady demand expected to continue in the coming weeks',
         impact: 'positive',
-        confidence: 88
+        confidence: 75
       }
     ];
+
     return insights;
   };
 
-  const generatePriceComparisons = () => {
-    return [
-      {
-        market: 'Pune Market',
-        price: 2250,
-        trend: 'up',
-        change: '+5.2%',
-        bestDeal: true
-      },
-      {
-        market: 'Nashik Market',
-        price: 2180,
-        trend: 'down',
-        change: '-2.1%',
-        bestDeal: false
-      },
-      {
-        market: 'Nagpur Market',
-        price: 2320,
-        trend: 'up',
-        change: '+8.7%',
-        bestDeal: false
-      },
-      {
-        market: 'Mumbai Market',
-        price: 2450,
-        trend: 'up',
-        change: '+12.3%',
-        bestDeal: false
-      }
-    ];
-  };
-
-  const generateTrendingCommodities = () => {
-    return [
-      {
-        commodity: 'Tomato',
-        trend: 'rising',
-        currentPrice: '₹45/kg',
-        change: '+18%',
-        reason: 'Seasonal demand increase'
-      },
-      {
-        commodity: 'Onion',
-        trend: 'stable',
-        currentPrice: '₹32/kg',
-        change: '+2%',
-        reason: 'Balanced supply chain'
-      },
-      {
-        commodity: 'Potato',
-        trend: 'falling',
-        currentPrice: '₹28/kg',
-        change: '-5%',
-        reason: 'Increased production'
-      },
-      {
-        commodity: 'Wheat',
-        trend: 'rising',
-        currentPrice: '₹2250/quintal',
-        change: '+8%',
-        reason: 'Export demand surge'
-      }
-    ];
-  };
-
-  useEffect(() => {
-    loadAnalyticsData();
-  }, [selectedCommodity, selectedDistrict, timeRange]);
-
-  const loadAnalyticsData = () => {
+  const loadAnalyticsData = async () => {
     setLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setChartData(generateChartData(selectedCommodity, timeRange));
-      setMarketInsights(generateMarketInsights(selectedCommodity));
-      setPriceComparisons(generatePriceComparisons());
-      setTrendingCommodities(generateTrendingCommodities());
+    try {
+      const [historicalData, marketComparisons, trendingCommoditiesData] = await Promise.all([
+        fetchHistoricalData(),
+        fetchMarketComparisons(),
+        fetchTrendingCommodities()
+      ]);
+
+      setChartData(historicalData);
+      setPriceComparisons(marketComparisons);
+      setMarketInsights(generateMarketInsights(selectedCommodity, historicalData));
+      setTrendingCommodities(trendingCommoditiesData);
+    } catch (error) {
+      console.error('Error loading analytics data:', error);
+      // Fallback to empty data
+      setChartData([]);
+      setPriceComparisons([]);
+      setMarketInsights([]);
+      setTrendingCommodities([]);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   const getCommodityColor = (commodityId) => {
-    const commodity = commodities.find(c => c.id === commodityId);
+    const commodity = availableCommodities.find(c => c.id === commodityId);
     return commodity ? commodity.color : '#3498db';
   };
 
@@ -225,6 +278,28 @@ const PriceAnalytics = () => {
     }
   };
 
+  const calculatePriceStats = (data) => {
+    if (!data || data.length === 0) return {};
+    
+    const prices = data.map(item => item.price);
+    const currentPrice = prices[prices.length - 1];
+    const previousPrice = prices.length > 1 ? prices[prices.length - 2] : currentPrice;
+    const changePercent = ((currentPrice - previousPrice) / previousPrice * 100).toFixed(1);
+    
+    const priceRange = Math.max(...prices) - Math.min(...prices);
+    const volatility = (priceRange / currentPrice * 100).toFixed(1);
+    
+    return {
+      currentPrice,
+      changePercent,
+      volatility: volatility > 15 ? 'High' : volatility > 8 ? 'Medium' : 'Low',
+      sentiment: changePercent > 2 ? 'Bullish' : changePercent < -2 ? 'Bearish' : 'Neutral'
+    };
+  };
+
+  const stats = calculatePriceStats(chartData);
+  const currentCommodity = availableCommodities.find(c => c.id === selectedCommodity);
+
   return (
     <div className="price-analytics">
       <div className="container">
@@ -242,7 +317,8 @@ const PriceAnalytics = () => {
               value={selectedCommodity}
               onChange={(e) => setSelectedCommodity(e.target.value)}
             >
-              {commodities.map(commodity => (
+              <option value="">Select Commodity</option>
+              {availableCommodities.map(commodity => (
                 <option key={commodity.id} value={commodity.id}>
                   {commodity.name}
                 </option>
@@ -255,10 +331,28 @@ const PriceAnalytics = () => {
             <select 
               value={selectedDistrict}
               onChange={(e) => setSelectedDistrict(e.target.value)}
+              disabled={availableDistricts.length === 0}
             >
-              {districts.map(district => (
+              <option value="">Select District</option>
+              {availableDistricts.map(district => (
                 <option key={district.id} value={district.id}>
                   {district.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>Market</label>
+            <select 
+              value={selectedMarket}
+              onChange={(e) => setSelectedMarket(e.target.value)}
+              disabled={availableMarkets.length === 0}
+            >
+              <option value="">Select Market</option>
+              {availableMarkets.map(market => (
+                <option key={market.id} value={market.id}>
+                  {market.name}
                 </option>
               ))}
             </select>
@@ -278,7 +372,11 @@ const PriceAnalytics = () => {
             </select>
           </div>
 
-          <button className="btn refresh-btn" onClick={loadAnalyticsData}>
+          <button 
+            className="btn refresh-btn" 
+            onClick={loadAnalyticsData}
+            disabled={!selectedCommodity || !selectedDistrict || !selectedMarket}
+          >
             🔄 Refresh Data
           </button>
         </div>
@@ -295,37 +393,46 @@ const PriceAnalytics = () => {
               <div className="analytics-card">
                 <div className="card-header">
                   <h2>
-                    {commodities.find(c => c.id === selectedCommodity)?.name} Price Trends
+                    {currentCommodity?.name || 'Commodity'} Price Trends
                   </h2>
                   <div className="current-price">
-                    <span className="price">₹{chartData[chartData.length - 1]?.price || 0}</span>
+                    <span className="price">₹{stats.currentPrice || 0}</span>
                     <span className="price-unit">/quintal</span>
                   </div>
                 </div>
                 
                 <div className="chart-wrapper">
-                  <PriceChart 
-                    data={chartData} 
-                    type="line" 
-                  />
+                  {chartData.length > 0 ? (
+                    <PriceChart data={chartData} type="line" />
+                  ) : (
+                    <div className="no-data-message">
+                      <div className="no-data-icon">📊</div>
+                      <p>No historical data available</p>
+                      <span>Select a commodity, district, and market to view price trends</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="chart-stats">
                   <div className="stat">
                     <span className="stat-label">Current Price</span>
-                    <span className="stat-value">₹{chartData[chartData.length - 1]?.price || 0}</span>
+                    <span className="stat-value">₹{stats.currentPrice || 0}</span>
                   </div>
                   <div className="stat">
-                    <span className="stat-label">3M Change</span>
-                    <span className="stat-value positive">+8.2%</span>
+                    <span className="stat-label">Price Change</span>
+                    <span className={`stat-value ${stats.changePercent > 0 ? 'positive' : stats.changePercent < 0 ? 'negative' : ''}`}>
+                      {stats.changePercent > 0 ? '+' : ''}{stats.changePercent || 0}%
+                    </span>
                   </div>
                   <div className="stat">
                     <span className="stat-label">Volatility</span>
-                    <span className="stat-value">Medium</span>
+                    <span className="stat-value">{stats.volatility || 'Low'}</span>
                   </div>
                   <div className="stat">
                     <span className="stat-label">Market Sentiment</span>
-                    <span className="stat-value positive">Bullish</span>
+                    <span className={`stat-value ${stats.sentiment?.toLowerCase()}`}>
+                      {stats.sentiment || 'Neutral'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -339,26 +446,32 @@ const PriceAnalytics = () => {
                   <h3>💡 Market Insights</h3>
                 </div>
                 <div className="insights-list">
-                  {marketInsights.map(insight => (
-                    <div key={insight.id} className="insight-item">
-                      <div className="insight-icon">
-                        {insight.type === 'demand' && '📈'}
-                        {insight.type === 'supply' && '🚚'}
-                        {insight.type === 'weather' && '🌧️'}
-                        {insight.type === 'market' && '🌍'}
-                      </div>
-                      <div className="insight-content">
-                        <h4>{insight.title}</h4>
-                        <p>{insight.description}</p>
-                        <div className="insight-meta">
-                          <span className={`impact ${insight.impact}`}>
-                            {insight.impact === 'positive' ? 'Positive' : 'Neutral'}
-                          </span>
-                          <span className="confidence">{insight.confidence}% confidence</span>
+                  {marketInsights.length > 0 ? (
+                    marketInsights.map(insight => (
+                      <div key={insight.id} className="insight-item">
+                        <div className="insight-icon">
+                          {insight.type === 'trend' && '📈'}
+                          {insight.type === 'volatility' && '📊'}
+                          {insight.type === 'seasonal' && '🌧️'}
+                          {insight.type === 'demand' && '🌍'}
+                        </div>
+                        <div className="insight-content">
+                          <h4>{insight.title}</h4>
+                          <p>{insight.description}</p>
+                          <div className="insight-meta">
+                            <span className={`impact ${insight.impact}`}>
+                              {insight.impact === 'positive' ? 'Positive' : 'Neutral'}
+                            </span>
+                            <span className="confidence">{insight.confidence}% confidence</span>
+                          </div>
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="no-insights">
+                      <p>No insights available</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
 
@@ -368,20 +481,26 @@ const PriceAnalytics = () => {
                   <h3>⚖️ Market Comparison</h3>
                 </div>
                 <div className="comparison-list">
-                  {priceComparisons.map((market, index) => (
-                    <div key={index} className="comparison-item">
-                      <div className="market-info">
-                        <span className="market-name">{market.market}</span>
-                        {market.bestDeal && <span className="best-deal-badge">Best Deal</span>}
+                  {priceComparisons.length > 0 ? (
+                    priceComparisons.map((market, index) => (
+                      <div key={index} className="comparison-item">
+                        <div className="market-info">
+                          <span className="market-name">{market.market}</span>
+                          {market.best_deal && <span className="best-deal-badge">Best Deal</span>}
+                        </div>
+                        <div className="price-info">
+                          <span className="market-price">₹{market.price}</span>
+                          <span className={`price-change ${market.trend}`}>
+                            {market.change}
+                          </span>
+                        </div>
                       </div>
-                      <div className="price-info">
-                        <span className="market-price">₹{market.price}</span>
-                        <span className={`price-change ${market.trend}`}>
-                          {market.change}
-                        </span>
-                      </div>
+                    ))
+                  ) : (
+                    <div className="no-comparisons">
+                      <p>No market comparisons available</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>
@@ -391,75 +510,31 @@ const PriceAnalytics = () => {
               <div className="analytics-card trending-card">
                 <div className="card-header">
                   <h3>🔥 Trending Commodities</h3>
-                  <span className="update-time">Updated 5 min ago</span>
+                  <span className="update-time">Live Data</span>
                 </div>
                 <div className="trending-grid">
-                  {trendingCommodities.map((item, index) => (
-                    <div key={index} className="trending-item">
-                      <div className="trending-header">
-                        <span className="commodity-name">{item.commodity}</span>
-                        <span 
-                          className="trend-indicator"
-                          style={{ color: getTrendColor(item.trend) }}
-                        >
-                          {getTrendIcon(item.trend)} {item.trend}
-                        </span>
+                  {trendingCommodities.length > 0 ? (
+                    trendingCommodities.map((item, index) => (
+                      <div key={index} className="trending-item">
+                        <div className="trending-header">
+                          <span className="commodity-name">{item.commodity}</span>
+                          <span 
+                            className="trend-indicator"
+                            style={{ color: getTrendColor(item.trend) }}
+                          >
+                            {getTrendIcon(item.trend)} {item.trend}
+                          </span>
+                        </div>
+                        <div className="trending-price">{item.current_price}</div>
+                        <div className="trending-change">{item.change}</div>
+                        <div className="trending-reason">{item.reason}</div>
                       </div>
-                      <div className="trending-price">{item.currentPrice}</div>
-                      <div className="trending-change">{item.change}</div>
-                      <div className="trending-reason">{item.reason}</div>
+                    ))
+                  ) : (
+                    <div className="no-trending">
+                      <p>No trending data available</p>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Advanced Analytics */}
-            <div className="advanced-analytics">
-              <div className="analytics-card">
-                <div className="card-header">
-                  <h3>🔍 Advanced Analytics</h3>
-                </div>
-                <div className="advanced-grid">
-                  <div className="advanced-metric">
-                    <span className="metric-label">Price Predictability</span>
-                    <div className="metric-value">
-                      <div className="progress-bar">
-                        <div 
-                          className="progress-fill" 
-                          style={{ width: '78%' }}
-                        ></div>
-                      </div>
-                      <span>78%</span>
-                    </div>
-                  </div>
-                  
-                  <div className="advanced-metric">
-                    <span className="metric-label">Market Correlation</span>
-                    <div className="metric-value">
-                      <div className="progress-bar">
-                        <div 
-                          className="progress-fill" 
-                          style={{ width: '65%' }}
-                        ></div>
-                      </div>
-                      <span>65%</span>
-                    </div>
-                  </div>
-                  
-                  <div className="advanced-metric">
-                    <span className="metric-label">Risk Level</span>
-                    <div className="metric-value">
-                      <span className="risk-level medium">Medium</span>
-                    </div>
-                  </div>
-                  
-                  <div className="advanced-metric">
-                    <span className="metric-label">Seasonal Impact</span>
-                    <div className="metric-value">
-                      <span className="seasonal-impact high">High</span>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -99,7 +99,7 @@
 .prediction-result-card {
   background: linear-gradient(135deg, #ffffff 0%, #f0f8ff 100%);
   border-left: 5px solid #27ae60;
-  min-width: 400px;
+  min-width: 300px;
 }
 
 .favorites-sidebar {
@@ -470,15 +470,15 @@
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 30px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
 }
 
 /* Product Card */
 .product-card {
   background: white;
   border-radius: 20px;
-  overflow: hidden;
+  /* overflow: hidden; */
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   border: 1px solid #f1f3f4;
@@ -491,12 +491,12 @@
 
 .product-image {
   position: relative;
-  height: 120px;
-  background: linear-gradient(135deg, #74b9ff, #0984e3);
+  height: 220px;
+  background: linear-gradient(135deg, #e7d729, #544602);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+
 }
 
 .product-emoji {
@@ -643,6 +643,7 @@
   box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
 }
 
+
 /* Responsive Design */
 @media (max-width: 1200px) {
   .prediction-row {
@@ -673,7 +674,7 @@
   .prediction-form-card,
   .prediction-result-card,
   .favorites-sidebar {
-    padding: 20px;
+    padding: 15px;
   }
   
   .price-amount {

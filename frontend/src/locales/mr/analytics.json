@@ -1,0 +1,66 @@
+{
+  "header": {
+    "title": "किंमत विश्लेषण",
+    "description": "प्रगत बाजार बुद्धिमत्ता आणि किंमत कल विश्लेषण"
+  },
+  "filters": {
+    "commodity": "वस्तू",
+    "district": "जिल्हा",
+    "market": "बाजार",
+    "timeRange": "वेळ मर्यादा",
+    "refreshData": "डेटा रिफ्रेश करा"
+  },
+  "timeRanges": {
+    "1month": "1 महिना",
+    "3months": "3 महिने",
+    "6months": "6 महिने",
+    "1year": "1 वर्ष"
+  },
+  "chart": {
+    "priceTrends": "किंमत कल",
+    "currentPrice": "सध्याची किंमत",
+    "perQuintal": "प्रति क्विंटल",
+    "priceChange": "किंमत बदल",
+    "volatility": "चढउतार",
+    "marketSentiment": "बाजार भावना"
+  },
+  "insights": {
+    "title": "बाजार अंतर्दृष्टी",
+    "demand": "उच्च माग अलर्ट",
+    "supply": "पुरवठा साखळी अपडेट",
+    "weather": "हवामान प्रभाव",
+    "market": "निर्यात संधी",
+    "trend": "किंमत कल",
+    "volatility": "बाजार स्थिरता",
+    "seasonal": "हंगामी विश्लेषण",
+    "positive": "सकारात्मक",
+    "neutral": "तटस्थ",
+    "confidence": "आत्मविश्वास"
+  },
+  "comparison": {
+    "title": "बाजार तुलना",
+    "bestDeal": "सर्वोत्तम डील",
+    "market": "बाजार",
+    "price": "किंमत",
+    "change": "बदल"
+  },
+  "trending": {
+    "title": "ट्रेंडिंग वस्तू",
+    "updated": "5 मिनिटांपूर्वी अपडेट केले",
+    "commodity": "वस्तू",
+    "trend": "कल",
+    "currentPrice": "सध्याची किंमत",
+    "change": "बदल",
+    "reason": "कारण",
+    "rising": "चढत",
+    "falling": "उतरत",
+    "stable": "स्थिर"
+  },
+  "loading": {
+    "message": "बाजार विश्लेषण लोड होत आहे..."
+  },
+  "noData": {
+    "message": "डेटा उपलब्ध नाही",
+    "description": "किंमत कल पाहण्यासाठी एक वस्तू, जिल्हा आणि बाजार निवडा"
+  }
+}

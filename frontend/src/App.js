@@ -1,17 +1,23 @@
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
-import './i18n';
+import './i18n'; // Import i18n configuration
 import Header from './components/Header';
 import FarmersDashboard from './components/FarmersDashboard';
 import BuyerMarketplace from './components/BuyerMarketplace';
 import PriceAnalytics from './components/PriceAnalytics';
-import SettingsAlerts from './components/SettingsAlerts';
-import LanguageSwitcher from './components/LanguageSwitcher';
 
 function App() {
   const [activeTab, setActiveTab] = useState('farmers');
 
-  const renderTabContent = () => {
+  // Set initial language from localStorage
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('preferred-language');
+    if (savedLanguage) {
+      // i18n will handle this automatically due to our configuration
+    }
+  }, []);
+
+  const renderActiveTab = () => {
     switch (activeTab) {
       case 'farmers':
         return <FarmersDashboard />;
@@ -20,7 +26,12 @@ function App() {
       case 'analytics':
         return <PriceAnalytics />;
       case 'settings':
-        return <SettingsAlerts />;
+        return (
+          <div className="settings-page">
+            <h2>Settings & Alerts</h2>
+            <p>Settings page coming soon...</p>
+          </div>
+        );
       default:
         return <FarmersDashboard />;
     }
@@ -28,18 +39,10 @@ function App() {
 
   return (
     <div className="App">
-      <Suspense fallback={<div className="loading-screen">Loading...</div>}>
-        {/* Language Switcher - Fixed Position */}
-        <LanguageSwitcher />
-        
-        {/* Header with Navigation */}
-        <Header activeTab={activeTab} setActiveTab={setActiveTab} />
-        
-        {/* Main Content */}
-        <main className="main-content">
-          {renderTabContent()}
-        </main>
-      </Suspense>
+      <Header activeTab={activeTab} setActiveTab={setActiveTab} />
+      <main className="main-content">
+        {renderActiveTab()}
+      </main>
     </div>
   );
 }

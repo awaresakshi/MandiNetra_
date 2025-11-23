@@ -1,56 +1,63 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
+import Backend from 'i18next-http-backend';
+import LanguageDetector from 'i18next-browser-languagedetector';
 
-// Simple resources for testing
+// Import translation files
+import enCommon from './locales/en/common.json';
+import hiCommon from './locales/hi/common.json';
+import mrCommon from './locales/mr/common.json';
+
+import enFarmers from './locales/en/farmers.json';
+import hiFarmers from './locales/hi/farmers.json';
+import mrFarmers from './locales/mr/farmers.json';
+
+import enBuyers from './locales/en/buyers.json';
+import hiBuyers from './locales/hi/buyers.json';
+import mrBuyers from './locales/mr/buyers.json';
+
+import enAnalytics from './locales/en/analytics.json';
+import hiAnalytics from './locales/hi/analytics.json';
+import mrAnalytics from './locales/mr/analytics.json';
+
 const resources = {
   en: {
-    translation: {
-      "header": {
-        "title": "MandiNetra",
-        "tagline": "मंडी की आंख | The Eye on the Mandi",
-        "subtagline": "AI-powered marketplace connecting farmers directly with consumers",
-        "directFarm": "🌱 Direct from Farm",
-        "aiPowered": "🤖 AI Powered"
-      }
-    }
+    common: enCommon,
+    farmers: enFarmers,
+    buyers: enBuyers,
+    analytics: enAnalytics
   },
   hi: {
-    translation: {
-      "header": {
-        "title": "मंडीनेत्र", 
-        "tagline": "मंडी की आंख | The Eye on the Mandi",
-        "subtagline": "किसानों को सीधे उपभोक्ताओं से जोड़ने वाला एआई-संचालित बाजार",
-        "directFarm": "🌱 सीधे खेत से",
-        "aiPowered": "🤖 एआई संचालित"
-      }
-    }
+    common: hiCommon,
+    farmers: hiFarmers,
+    buyers: hiBuyers,
+    analytics: hiAnalytics
   },
   mr: {
-    translation: {
-      "header": {
-        "title": "मंडीनेत्र",
-        "tagline": "मंडीची डोळा | The Eye on the Mandi", 
-        "subtagline": "शेतकऱ्यांना थेट ग्राहकांशी जोडणारे AI-चालित बाजार",
-        "directFarm": "🌱 शेतातून थेट",
-        "aiPowered": "🤖 AI चालित"
-      }
-    }
+    common: mrCommon,
+    farmers: mrFarmers,
+    buyers: mrBuyers,
+    analytics: mrAnalytics
   }
 };
 
-// Initialize i18next
 i18n
+  .use(Backend)
+  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources,
-    lng: 'en', // default language
     fallbackLng: 'en',
-    debug: true, // This will show logs in console
+    debug: process.env.NODE_ENV === 'development',
     interpolation: {
-      escapeValue: false, // React already safes from XSS
+      escapeValue: false,
     },
+    defaultNS: 'common',
+    ns: ['common', 'farmers', 'buyers', 'analytics'],
+    detection: {
+      order: ['localStorage', 'navigator', 'htmlTag'],
+      caches: ['localStorage']
+    }
   });
-
-console.log('i18n initialized with languages:', Object.keys(resources));
 
 export default i18n;

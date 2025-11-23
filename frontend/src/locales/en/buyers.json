@@ -1,0 +1,55 @@
+{
+  "header": {
+    "title": "Buyer Marketplace",
+    "searchPlaceholder": "Search crops, farmers, or locations..."
+  },
+  "prediction": {
+    "title": "Get Price Prediction",
+    "description": "Get AI-powered price forecasts for agricultural commodities",
+    "commodity": "Select Commodity",
+    "district": "Select District",
+    "market": "Select Market",
+    "getPrediction": "Get Prediction",
+    "predicting": "Predicting..."
+  },
+  "result": {
+    "title": "Prediction Result",
+    "savePrediction": "Save Prediction",
+    "perQuintal": "per quintal",
+    "commodity": "Commodity",
+    "market": "Market",
+    "predictionDate": "Prediction Date",
+    "confidenceScore": "Confidence Score",
+    "accurate": "Accurate",
+    "viewTrend": "View Price Trend",
+    "setAlert": "Set Price Alert",
+    "newPrediction": "New Prediction"
+  },
+  "products": {
+    "title": "Available Products",
+    "description": "Fresh produce directly from farmers across Maharashtra",
+    "loading": "Loading products...",
+    "noProducts": {
+      "title": "No Products Available Yet",
+      "description": "Be the first to add a product to the marketplace!"
+    }
+  },
+  "commodities": {
+    "title": "All Available Commodities",
+    "description": "Click on any commodity to start price prediction",
+    "districtsAvailable": "districts available",
+    "clickToView": "Click to view districts"
+  },
+  "errors": {
+    "fillAllFields": "Please fill all fields",
+    "connection": "Connection error",
+    "predictionFailed": "Prediction failed"
+  },
+  "placeholders": {
+    "chooseCommodity": "Choose commodity",
+    "firstSelectCommodity": "First select commodity",
+    "selectDistrict": "Select district",
+    "loadingMarkets": "Loading markets...",
+    "selectMarket": "Select market"
+  }
+}

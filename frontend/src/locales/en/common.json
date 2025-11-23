@@ -1,0 +1,26 @@
+{
+  "header": {
+    "title": "KrishiVision",
+    "tagline": "AI-Powered Agricultural Marketplace",
+    "subtagline": "Connecting Farmers Directly with Buyers",
+    "directFarm": "Direct Farm to Market",
+    "aiPowered": "AI Price Predictions"
+  },
+  "navigation": {
+    "farmers": "Farmer's Dashboard",
+    "buyers": "Buyer Marketplace", 
+    "analytics": "Price Analytics",
+    "settings": "Settings & Alerts"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "search": "Search...",
+    "noData": "No data available"
+  }
+}

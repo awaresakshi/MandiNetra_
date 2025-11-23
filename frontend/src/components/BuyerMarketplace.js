@@ -11,25 +11,18 @@ const BuyerMarketplace = () => {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [priceHistory, setPriceHistory] = useState([]);
-  const [favorites, setFavorites] = useState([]);
   const [loadingMarkets, setLoadingMarkets] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [availableCommodities, setAvailableCommodities] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
 
-  // Load favorites from localStorage and fetch available commodities
+  const API_BASE_URL = 'http://127.0.0.1:5000';
+
+  // Fetch available commodities and products
   useEffect(() => {
-    const saved = localStorage.getItem('buyerFavorites');
-    if (saved) {
-      try {
-        setFavorites(JSON.parse(saved));
-      } catch (err) {
-        console.error('Error loading favorites:', err);
-        setFavorites([]);
-      }
-    }
-    
-    // Fetch available commodities from backend
     fetchAvailableCommodities();
+    fetchProducts();
   }, []);
 
   // Fetch available commodities from backend
@@ -47,6 +40,134 @@ const BuyerMarketplace = () => {
       console.error('Error fetching commodities:', error);
       // Fallback to default list
       setAvailableCommodities(getDefaultCommodities());
+    }
+  };
+
+  // Fetch products from backend
+  const fetchProducts = async () => {
+    try {
+      setLoadingProducts(true);
+      const response = await fetch('http://127.0.0.1:5000/api/products');
+      if (response.ok) {
+        const data = await response.json();
+        setProducts(data.products || []);
+      } else {
+        // Fallback to mock data if API fails
+        setProducts(getMockProducts());
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      // Fallback to mock data
+      setProducts(getMockProducts());
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
+  // Mock products data as fallback - using actual working image URLs
+  const getMockProducts = () => [
+    {
+      product_id: 1,
+      crop_name: "Fresh Organic Tomatoes",
+      farmer_name: "Green Valley Farms",
+      district: "Pune",
+      quantity: 500,
+      unit: "kg",
+      expected_price: 42,
+      harvest_date: "2024-01-15",
+      image_url: "https://images.unsplash.com/photo-1546470427-e212b7d310a2?w=400&h=300&fit=crop"
+    },
+    {
+      product_id: 2,
+      crop_name: "Premium Wheat Grains",
+      farmer_name: "Golden Fields Agro",
+      district: "Amravati",
+      quantity: 50,
+      unit: "quintal",
+      expected_price: 2100,
+      harvest_date: "2024-01-10",
+      image_url: "https://images.unsplash.com/photo-1567026255650-68ad54d0d073?w=400&h=300&fit=crop"
+    },
+    {
+      product_id: 3,
+      crop_name: "Fresh Brinjal",
+      farmer_name: "Vegetable Paradise",
+      district: "Nagpur",
+      quantity: 300,
+      unit: "kg",
+      expected_price: 35,
+      harvest_date: "2024-01-14",
+      image_url: "https://images.unsplash.com/photo-1599424423319-2a2d2baa5ce8?w=400&h=300&fit=crop"
+    },
+    {
+      product_id: 4,
+      crop_name: "Sweet Alphonso Mangoes",
+      farmer_name: "Mango King Orchards",
+      district: "Ratnagiri",
+      quantity: 200,
+      unit: "kg",
+      expected_price: 65,
+      harvest_date: "2024-01-12",
+      image_url: "https://images.unsplash.com/photo-1553279768-865429fa0078?w=400&h=300&fit=crop"
+    }
+  ];
+
+  // Helper functions for product display
+  const generateRating = () => {
+    return (Math.random() * (5 - 3.5) + 3.5).toFixed(1);
+  };
+
+  const generateReviewCount = () => {
+    return Math.floor(Math.random() * 200) + 50;
+  };
+
+  const generateQualityScore = () => {
+    return Math.floor(Math.random() * 20) + 80; // 80-100
+  };
+
+  const calculateFreshness = (harvestDate) => {
+    const harvest = new Date(harvestDate);
+    const today = new Date();
+    const diffTime = Math.abs(today - harvest);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return "Harvested Today";
+    if (diffDays === 1) return "Harvested Yesterday";
+    if (diffDays <= 3) return "Very Fresh";
+    if (diffDays <= 7) return "Fresh";
+    return "Good Condition";
+  };
+
+  // Get image URL - handles both stored images and new uploads
+  const getImageUrl = (product) => {
+    if (product.image_url) {
+      // If it's already a full URL (like from mock data), return as is
+      if (product.image_url.startsWith('http')) {
+        return product.image_url;
+      }
+      // If it's a relative path from backend, construct full URL
+      return `${API_BASE_URL}${product.image_url}`;
+    }
+    return null;
+  };
+
+  // Handle image loading errors
+  const handleImageError = (e) => {
+    console.log('Image failed to load, showing placeholder');
+    const imgElement = e.target;
+    const placeholder = imgElement.parentNode.querySelector('.product-image-placeholder');
+    
+    if (placeholder) {
+      imgElement.style.display = 'none';
+      placeholder.style.display = 'flex';
+    }
+  };
+
+  // Handle image loading success
+  const handleImageLoad = (e) => {
+    const placeholder = e.target.parentNode.querySelector('.product-image-placeholder');
+    if (placeholder) {
+      placeholder.style.display = 'none';
     }
   };
 
@@ -177,7 +298,7 @@ const BuyerMarketplace = () => {
       if (response.ok) {
         setResult(data);
         // Add to price history
-        setPriceHistory(prev => [data, ...prev.slice(0, 9)]);
+        setPriceHistory(prev => [data, ...prev.slice(0, 4)]);
       } else {
         setError(data.error || 'Prediction failed');
       }
@@ -186,32 +307,6 @@ const BuyerMarketplace = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const addToFavorites = () => {
-    if (!result) return;
-    
-    const newFavorite = {
-      id: Date.now(),
-      commodity: result.commodity,
-      district: result.district,
-      market: result.market,
-      predictedPrice: result.predicted_price,
-      timestamp: new Date().toISOString()
-    };
-    
-    const newFavorites = [newFavorite, ...favorites.filter(f =>
-      !(f.commodity === result.commodity && f.district === result.district && f.market === result.market)
-    ).slice(0, 4)];
-    
-    setFavorites(newFavorites);
-    localStorage.setItem('buyerFavorites', JSON.stringify(newFavorites));
-  };
-
-  const removeFromFavorites = (id) => {
-    const newFavorites = favorites.filter(fav => fav.id !== id);
-    setFavorites(newFavorites);
-    localStorage.setItem('buyerFavorites', JSON.stringify(newFavorites));
   };
 
   const resetForm = () => {
@@ -227,106 +322,6 @@ const BuyerMarketplace = () => {
   const clearError = () => {
     setError('');
   };
-
-  // Mock data for featured products with images - updated to match available commodities
-  const featuredProducts = [
-    {
-      id: 1,
-      name: "Fresh Tomatoes",
-      commodity: "tomato",
-      image: "🍅",
-      rating: 4.8,
-      reviews: 128,
-      available: "500 kg",
-      freshness: "Harvested: 1 day ago",
-      qualityScore: 92,
-      price: "₹42/kg",
-      farmer: "Green Valley Farms",
-      location: "Pune, Maharashtra",
-      delivery: "Free delivery",
-      verified: true
-    },
-    {
-      id: 2,
-      name: "Organic Onions",
-      commodity: "onion",
-      image: "🧅",
-      rating: 3.9,
-      reviews: 89,
-      available: "1000 kg",
-      freshness: "Harvested: 3 days ago",
-      qualityScore: 89,
-      price: "₹28/kg",
-      farmer: "Organic Harvest Co.",
-      location: "Nashik, Maharashtra",
-      delivery: "Free delivery",
-      verified: true
-    },
-    {
-      id: 3,
-      name: "Premium Wheat",
-      commodity: "wheat",
-      image: "🌾",
-      rating: 5.0,
-      reviews: 64,
-      available: "50 quintals",
-      freshness: "Quality: 98% Pure",
-      qualityScore: 96,
-      price: "₹2,100/quintal",
-      farmer: "Golden Fields Agro",
-      location: "Amravati, Maharashtra",
-      delivery: "Free delivery",
-      verified: true
-    },
-    {
-      id: 4,
-      name: "Fresh Brinjal",
-      commodity: "brinjal",
-      image: "🍆",
-      rating: 4.3,
-      reviews: 76,
-      available: "300 kg",
-      freshness: "Harvested: 2 days ago",
-      qualityScore: 85,
-      price: "₹35/kg",
-      farmer: "Vegetable Paradise",
-      location: "Nagpur, Maharashtra",
-      delivery: "Free delivery",
-      verified: true
-    },
-    {
-      id: 5,
-      name: "Sweet Mangoes",
-      commodity: "mangos",
-      image: "🥭",
-      rating: 4.9,
-      reviews: 203,
-      available: "200 kg",
-      freshness: "Season's Best",
-      qualityScore: 94,
-      price: "₹65/kg",
-      farmer: "Mango King Orchards",
-      location: "Ratnagiri, Maharashtra",
-      delivery: "Free delivery",
-      verified: true
-    },
-    {
-      id: 6,
-      name: "Fresh Cabbage",
-      commodity: "cabbage",
-      image: "🥬",
-      rating: 4.2,
-      reviews: 45,
-      available: "400 kg",
-      freshness: "Harvested: 1 day ago",
-      qualityScore: 88,
-      price: "₹22/kg",
-      farmer: "Green Leaf Farms",
-      location: "Satara, Maharashtra",
-      delivery: "Free delivery",
-      verified: true
-    }
-  ];
 
   return (
     <div className="buyer-marketplace-new">
@@ -440,6 +435,31 @@ const BuyerMarketplace = () => {
                 </div>
               )}
             </form>
+
+            {/* Price History Section */}
+            {priceHistory.length > 0 && (
+              <div className="price-history-section">
+                <h3>Recent Predictions</h3>
+                <div className="price-history-list">
+                  {priceHistory.map((prediction, index) => (
+                    <div key={index} className="price-history-item">
+                      <div className="history-commodity">
+                        {prediction.commodity_display || prediction.commodity}
+                      </div>
+                      <div className="history-location">
+                        {prediction.district}, {prediction.market}
+                      </div>
+                      <div className="history-price">
+                        ₹{prediction.predicted_price}/quintal
+                      </div>
+                      <div className="history-date">
+                        {prediction.prediction_date}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Prediction Result Card */}
@@ -447,9 +467,6 @@ const BuyerMarketplace = () => {
             <div className="prediction-result-card">
               <div className="card-header">
                 <h2>💰 Prediction Result</h2>
-                <button onClick={addToFavorites} className="favorite-btn-new">
-                  ⭐ Save Prediction
-                </button>
               </div>
 
               <div className="prediction-content">
@@ -491,129 +508,106 @@ const BuyerMarketplace = () => {
               </div>
             </div>
           )}
-
-          {/* Favorites Sidebar */}
-          <div className="favorites-sidebar">
-            <div className="sidebar-header">
-              <h3>⭐ Favorites</h3>
-              <span className="favorites-count">{favorites.length}</span>
-            </div>
-            
-            <div className="favorites-list-new">
-              {favorites.length > 0 ? (
-                favorites.map(fav => (
-                  <div key={fav.id} className="favorite-item-new">
-                    <div className="fav-content">
-                      <div className="fav-commodity">{fav.commodity}</div>
-                      <div className="fav-location">{fav.district}</div>
-                      <div className="fav-price">₹{fav.predictedPrice}</div>
-                    </div>
-                    <button 
-                      onClick={() => removeFromFavorites(fav.id)} 
-                      className="remove-fav-btn"
-                      title="Remove from favorites"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <div className="empty-favorites">
-                  <div className="empty-icon">⭐</div>
-                  <p>No favorites yet</p>
-                  <span>Your saved predictions will appear here</span>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
-        {/* Featured Products Section */}
-        <div className="featured-products-section">
+        {/* Products Marketplace Section */}
+        <div className="products-marketplace-section">
           <div className="section-header">
-            <h2>Featured Products</h2>
-            <p>Fresh produce from verified farmers across Maharashtra</p>
+            <h2>Available Products</h2>
+            <p>Fresh produce directly from farmers across Maharashtra</p>
           </div>
 
-          <div className="products-grid">
-            {featuredProducts.map(product => (
-              <div key={product.id} className="product-card">
-                <div className="product-image">
-                  <div className="product-emoji">{product.image}</div>
-                  {product.verified && <div className="verified-badge">✓ Verified</div>}
-                </div>
-
-                <div className="product-content">
-                  <div className="product-header">
-                    <h3>{product.name}</h3>
-                    <div className="rating-badge">
-                      <span className="star">⭐</span>
-                      <span className="rating-value">{product.rating}</span>
-                      <span className="reviews">({product.reviews})</span>
+          {loadingProducts ? (
+            <div className="loading-products">
+              <div className="loading-spinner"></div>
+              <p>Loading products...</p>
+            </div>
+          ) : products.length > 0 ? (
+            <div className="products-grid">
+              {products.map((product, index) => {
+                const imageUrl = getImageUrl(product);
+                return (
+                  <div key={product.product_id || index} className="product-card">
+                    <div className="product-image">
+                      {imageUrl ? (
+                        <>
+                          <img 
+                            src={imageUrl} 
+                            alt={product.crop_name}
+                            onError={handleImageError}
+                            onLoad={handleImageLoad}
+                          />
+                          {/* Placeholder that's hidden by default when image is present */}
+                          <div 
+                            className="product-image-placeholder"
+                            style={{ display: 'none' }}
+                          >
+                            <span>🌱</span>
+                          </div>
+                        </>
+                      ) : (
+                        /* Show only placeholder if no image URL */
+                        <div className="product-image-placeholder">
+                          <span>🌱</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="product-content">
+                      <div className="product-header">
+                        <h3 className="product-title">{product.crop_name}</h3>
+                        <div className="product-rating">
+                          <span className="rating-stars">⭐</span>
+                          <span className="rating-value">{generateRating()}</span>
+                          <span className="rating-count">({generateReviewCount()})</span>
+                        </div>
+                      </div>
+                      
+                      <div className="product-farm">
+                        <span className="farm-name">
+                          {product.farmer_name || 'Local Farm'}
+                        </span>
+                        <span className="farm-location">📍 {product.district}, Maharashtra</span>
+                      </div>
+                      
+                      <div className="product-details">
+                        <div className="detail-item">
+                          <span className="detail-label">Available:</span>
+                          <span className="detail-value">{product.quantity} {product.unit}</span>
+                        </div>
+                        <div className="detail-item">
+                          <span className="detail-label">Freshness:</span>
+                          <span className="detail-value">
+                            {calculateFreshness(product.harvest_date)}
+                          </span>
+                        </div>
+                        <div className="detail-item">
+                          <span className="detail-label">AI Quality Score:</span>
+                          <span className="detail-value quality-score">
+                            {generateQualityScore()}/100
+                          </span>
+                        </div>
+                      </div>
+                      <div className="product-footer">
+                        <div className="price-section">
+                          <div className="price">₹{product.expected_price}/{product.unit}</div>
+                        </div>
+                        <button className="contact-button">
+                          📞 Contact Farmer
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="farmer-info">
-                    <span className="farmer-name">{product.farmer}</span>
-                    <span className="location">📍 {product.location}</span>
-                  </div>
-
-                  <div className="product-details">
-                    <div className="detail-row">
-                      <span className="detail-label">Available:</span>
-                      <span className="detail-value">{product.available}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Freshness:</span>
-                      <span className="detail-value freshness-good">{product.freshness}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">AI Quality Score:</span>
-                      <span className="detail-value quality-score">{product.qualityScore}/100</span>
-                    </div>
-                  </div>
-
-                  <div className="delivery-badge">
-                    🚚 {product.delivery}
-                  </div>
-
-                  <div className="product-footer">
-                    <div className="price-section">
-                      <div className="price">{product.price}</div>
-                    </div>
-                    <button className="contact-btn">
-                      📞 Contact Farmer
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Quick Access Commodity Grid */}
-        <div className="commodity-grid-section">
-          <div className="section-header">
-            <h2>All Available Commodities</h2>
-            <p>Click on any commodity to start price prediction</p>
-          </div>
-          
-          <div className="commodity-grid">
-            {availableCommodities.map(comm => (
-              <div 
-                key={comm.id} 
-                className={`commodity-card ${commodity === comm.id ? 'active' : ''}`}
-                onClick={() => setCommodity(comm.id)}
-              >
-                <div className="commodity-icon">{comm.icon}</div>
-                <div className="commodity-name">{comm.name.split(' ')[1] || comm.name}</div>
-                <div className="commodity-status">
-                  {districts.length > 0 && commodity === comm.id ? 
-                    `${districts.length} districts available` : 'Click to view districts'}
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="no-products">
+              <div className="no-products-icon">🌱</div>
+              <h3>No Products Available Yet</h3>
+              <p>Be the first to add a product to the marketplace!</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

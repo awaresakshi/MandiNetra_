@@ -1,0 +1,104 @@
+{
+  "status": {
+    "connected": "कनेक्टेड",
+    "serverOffline": "सर्वर ऑफलाइन",
+    "districts": "जिल्हे"
+  },
+  "steps": {
+    "farmerDetails": "शेतकरी तपशील",
+    "cropDetails": "पीक तपशील"
+  },
+  "forms": {
+    "addFarmerDetails": "शेतकरी तपशील जोडा",
+    "addCropDetails": "पीक तपशील जोडा",
+    "step": "स्टेप {{step}} of {{total}}",
+    "farmerInformation": "शेतकरी माहिती",
+    "fullName": "पूर्ण नाव",
+    "enterFullName": "आपले पूर्ण नाव प्रविष्ट करा",
+    "phoneNumber": "फोन नंबर",
+    "enterPhoneNumber": "10-अंकीय फोन नंबर प्रविष्ट करा",
+    "phoneNumberHint": "देश कोडशिवाय 10-अंकीय मोबाईल नंबर",
+    "district": "जिल्हा",
+    "selectDistrict": "जिल्हा निवडा",
+    "districtsAvailable": "{{count}} जिल्हे उपलब्ध",
+    "taluka": "तालुका",
+    "enterTaluka": "तालुका नाव प्रविष्ट करा",
+    "cropInformation": "पीक माहिती",
+    "cropName": "पिकाचे नाव",
+    "selectCropName": "पिकाचे नाव निवडा",
+    "cropType": "पीक प्रकार",
+    "selectCropType": "पीक प्रकार निवडा",
+    "quantity": "प्रमाण",
+    "enterQuantity": "प्रमाण प्रविष्ट करा",
+    "quintal": "क्विंटल",
+    "quintalHint": "1 क्विंटल = 100 किलो",
+    "kgHint": "वजन किलोग्रॅममध्ये प्रविष्ट करा",
+    "expectedPrice": "अपेक्षित किंमत",
+    "enterExpectedPrice": "प्रति युनिट अपेक्षित किंमत",
+    "expectedPriceHint": "प्रति {{unit}} अपेक्षित विक्री किंमत",
+    "districtForSale": "विक्रीसाठी जिल्हा",
+    "market": "बाजार",
+    "firstSelectDistrict": "प्रथम जिल्हा निवडा",
+    "noMarketsAvailable": "कोणतेही बाजार उपलब्ध नाहीत",
+    "selectMarket": "बाजार निवडा",
+    "harvestDate": "कापणीची तारीख",
+    "harvestDateHint": "ज्या तारखेला पीक कापले गेले ती तारीख निवडा",
+    "cropPhoto": "पीक फोटो",
+    "cropPreview": "पीक पूर्वावलोकन",
+    "clickToUpload": "पीक इमेज अपलोड करण्यासाठी क्लिक करा",
+    "imageFormats": "JPG, PNG, WEBP (कमाल 5MB)",
+    "productSummary": "उत्पादन सारांश",
+    "farmer": "शेतकरी",
+    "phone": "फोन",
+    "crop": "पीक",
+    "type": "प्रकार",
+    "location": "स्थान",
+    "notEntered": "प्रविष्ट केले नाही",
+    "notSelected": "निवडले नाही",
+    "productVisibilityHint": "तुमचे उत्पादन प्लॅटफॉर्मवरील खरेदीदारांना दिसेल"
+  },
+  "buttons": {
+    "nextCropDetails": "पुढे: पीक तपशील",
+    "back": "मागे",
+    "addingProduct": "उत्पादन जोडले जात आहे...",
+    "addProductToMarketplace": "बाजारात उत्पादन जोडा",
+    "contactFarmer": "शेतकरीशी संपर्क साधा"
+  },
+  "warnings": {
+    "backendNotRunning": "बॅकेंड सर्वर चालू नाही!",
+    "startBackendServer": "कृपया आपला Flask बॅकेंड सर्वर http://127.0.0.1:5000 वर सुरू करा",
+    "noDistrictsAvailable": "कोणतेही जिल्हे उपलब्ध नाहीत. कृपया तपासा की कमोडिटी मॉडेल योग्यरित्या लोड झाले आहेत.",
+    "noMarketsFound": "{{district}} साठी कोणतेही बाजार सापडले नाहीत"
+  },
+  "alerts": {
+    "invalidImageType": "कृपया एक वैध इमेज फाइल निवडा (JPEG, PNG, किंवा WEBP)",
+    "imageSizeLimit": "इमेजचा आकार 5MB पेक्षा कमी असावा",
+    "serverNotRunning": "सर्वरशी कनेक्ट होऊ शकत नाही. कृपया खात्री करा की बॅकेंड चालू आहे.",
+    "productAddedSuccess": "उत्पादन यशस्वीरित्या जोडले गेले!",
+    "fillRequiredFields": "कृपया सर्व आवश्यक शेतकरी तपशील भरा",
+    "error": "त्रुटी: "
+  },
+  "errors": {
+    "farmerCreationFailed": "शेतकरी तयार करण्यात अयशस्वी",
+    "productCreationFailed": "उत्पादन जोडण्यात अयशस्वी"
+  },
+  "products": {
+    "recentCommodities": "अलीकडील वस्तू",
+    "latestProducts": "शेतकऱ्यांद्वारे जोडलेली नवीनतम उत्पादने",
+    "noProductsAvailable": "अद्याप कोणतीही उत्पादने उपलब्ध नाहीत",
+    "beFirstToAdd": "बाजारात पहिले उत्पादन जोडणारे व्हा!"
+  },
+  "product": {
+    "recentlyHarvested": "अलीकडे कापलेली",
+    "harvested1Day": "कापणी: 1 दिवसापूर्वी",
+    "harvestedDays": "कापणी: {{days}} दिवसांपूर्वी",
+    "harvestedWeeks": "कापणी: {{weeks}} आठवड्यांपूर्वी",
+    "harvestedMonths": "कापणी: {{months}} महिन्यांपूर्वी",
+    "localFarm": "स्थानिक शेत",
+    "maharashtra": "महाराष्ट्र",
+    "available": "उपलब्ध",
+    "freshness": "ताजेपणा",
+    "qualityScore": "कृत्रिम बुद्धिमत्ता गुणवत्ता स्कोअर"
+  },
+  "imageAlt": "स्मार्टफोन वापरून पीक व्यवस्थापित करणारा शेतकरी"
+}

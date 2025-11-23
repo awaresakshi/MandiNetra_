@@ -13,6 +13,8 @@ const Header = ({ activeTab, setActiveTab }) => {
 
   const handleLanguageChange = (languageCode) => {
     i18n.changeLanguage(languageCode);
+    // Save to backend user preference if user is logged in
+    localStorage.setItem('preferred-language', languageCode);
   };
 
   const getCurrentLanguage = () => {
@@ -23,31 +25,24 @@ const Header = ({ activeTab, setActiveTab }) => {
     <header className="app-header">
       {/* Language Switcher */}
       <div className="header-language-switcher">
-        <div className="dropdown">
-          <ul className="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3">
+        <div className="language-dropdown">
+          <button className="language-current">
+            <span className="language-flag">{getCurrentLanguage().flag}</span>
+            <span className="language-code">{getCurrentLanguage().code.toUpperCase()}</span>
+          </button>
+          <div className="language-dropdown-menu">
             {languages.map((lang) => (
-              <li key={lang.code}>
-                <button
-                  className={`dropdown-item d-flex align-items-center gap-3 py-2 px-3 ${
-                    i18n.language === lang.code ? 'active-language' : ''
-                  }`}
-                  onClick={() => handleLanguageChange(lang.code)}
-                >
-                  <span className="language-flag fs-5">{lang.flag}</span>
-                  <div className="d-flex flex-column text-start">
-                    <span className="fw-semibold">{lang.nativeName}</span>
-                    <small className="text-muted">{lang.name}</small>
-                  </div>
-                  {i18n.language === lang.code && (
-                    <i className="bi bi-check-lg text-success ms-auto fs-6"></i>
-                  )}
-                </button>
-                {lang.code !== languages[languages.length - 1].code && (
-                  <hr className="dropdown-divider my-1" />
-                )}
-              </li>
+              <button
+                key={lang.code}
+                className={`language-option ${i18n.language === lang.code ? 'active' : ''}`}
+                onClick={() => handleLanguageChange(lang.code)}
+              >
+                <span className="language-flag">{lang.flag}</span>
+                <span className="language-name">{lang.nativeName}</span>
+                <span className="language-english">({lang.name})</span>
+              </button>
             ))}
-          </ul>
+          </div>
         </div>
       </div>
 
@@ -84,8 +79,7 @@ const Header = ({ activeTab, setActiveTab }) => {
             onClick={() => setActiveTab('farmers')}
           >
             <span className="nav-icon">👨‍🌾</span>
-            <span className="nav-text">Farmer's Dashboard</span>
-            <span className="nav-hindi">किसान डैशबोर्ड</span>
+            <span className="nav-text">{t('navigation.farmers')}</span>
           </button>
 
           <button 
@@ -93,8 +87,7 @@ const Header = ({ activeTab, setActiveTab }) => {
             onClick={() => setActiveTab('buyers')}
           >
             <span className="nav-icon">🛒</span>
-            <span className="nav-text">Buyer Marketplace</span>
-            <span className="nav-hindi">खरीदार बाजार</span>
+            <span className="nav-text">{t('navigation.buyers')}</span>
           </button>
 
           <button 
@@ -102,8 +95,7 @@ const Header = ({ activeTab, setActiveTab }) => {
             onClick={() => setActiveTab('analytics')}
           >
             <span className="nav-icon">📊</span>
-            <span className="nav-text">Price Analytics</span>
-            <span className="nav-hindi">मूल्य विश्लेषण</span>
+            <span className="nav-text">{t('navigation.analytics')}</span>
           </button>
 
           <button 
@@ -111,8 +103,7 @@ const Header = ({ activeTab, setActiveTab }) => {
             onClick={() => setActiveTab('settings')}
           >
             <span className="nav-icon">⚙️</span>
-            <span className="nav-text">Settings & Alerts</span>
-            <span className="nav-hindi">सेटिंग्स</span>
+            <span className="nav-text">{t('navigation.settings')}</span>
           </button>
         </div>
       </nav>

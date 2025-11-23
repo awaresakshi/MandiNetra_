@@ -1,0 +1,55 @@
+{
+  "header": {
+    "title": "खरीदार बाजार",
+    "searchPlaceholder": "फसलों, किसानों या स्थानों की खोज करें..."
+  },
+  "prediction": {
+    "title": "मूल्य भविष्यवाणी प्राप्त करें",
+    "description": "कृषि वस्तुओं के लिए एआई-संचालित मूल्य पूर्वानुमान प्राप्त करें",
+    "commodity": "वस्तु चुनें",
+    "district": "जिला चुनें",
+    "market": "बाजार चुनें",
+    "getPrediction": "भविष्यवाणी प्राप्त करें",
+    "predicting": "भविष्यवाणी की जा रही है..."
+  },
+  "result": {
+    "title": "भविष्यवाणी परिणाम",
+    "savePrediction": "भविष्यवाणी सहेजें",
+    "perQuintal": "प्रति क्विंटल",
+    "commodity": "वस्तु",
+    "market": "बाजार",
+    "predictionDate": "भविष्यवाणी तिथि",
+    "confidenceScore": "आत्मविश्वास स्कोर",
+    "accurate": "सटीक",
+    "viewTrend": "मूल्य प्रवृत्ति देखें",
+    "setAlert": "मूल्य अलर्ट सेट करें",
+    "newPrediction": "नई भविष्यवाणी"
+  },
+  "products": {
+    "title": "उपलब्ध उत्पाद",
+    "description": "महाराष्ट्र भर के किसानों से सीधे ताजा उत्पाद",
+    "loading": "उत्पाद लोड हो रहे हैं...",
+    "noProducts": {
+      "title": "अभी तक कोई उत्पाद उपलब्ध नहीं",
+      "description": "बाजार में पहला उत्पाद जोड़ने वाले बनें!"
+    }
+  },
+  "commodities": {
+    "title": "सभी उपलब्ध वस्तुएं",
+    "description": "मूल्य भविष्यवाणी शुरू करने के लिए किसी भी वस्तु पर क्लिक करें",
+    "districtsAvailable": "जिले उपलब्ध",
+    "clickToView": "जिले देखने के लिए क्लिक करें"
+  },
+  "errors": {
+    "fillAllFields": "कृपया सभी फ़ील्ड भरें",
+    "connection": "कनेक्शन त्रुटि",
+    "predictionFailed": "भविष्यवाणी विफल"
+  },
+  "placeholders": {
+    "chooseCommodity": "वस्तु चुनें",
+    "firstSelectCommodity": "पहले वस्तु चुनें",
+    "selectDistrict": "जिला चुनें",
+    "loadingMarkets": "बाजार लोड हो रहे हैं...",
+    "selectMarket": "बाजार चुनें"
+  }
+}

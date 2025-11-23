@@ -1,0 +1,104 @@
+{
+  "status": {
+    "connected": "Connected",
+    "serverOffline": "Server Offline",
+    "districts": "districts"
+  },
+  "steps": {
+    "farmerDetails": "Farmer Details",
+    "cropDetails": "Crop Details"
+  },
+  "forms": {
+    "addFarmerDetails": "Add Farmer Details",
+    "addCropDetails": "Add Crop Details",
+    "step": "Step {{step}} of {{total}}",
+    "farmerInformation": "Farmer Information",
+    "fullName": "Full Name",
+    "enterFullName": "Enter your full name",
+    "phoneNumber": "Phone Number",
+    "enterPhoneNumber": "Enter 10-digit phone number",
+    "phoneNumberHint": "10-digit mobile number without country code",
+    "district": "District",
+    "selectDistrict": "Select District",
+    "districtsAvailable": "{{count}} districts available",
+    "taluka": "Taluka",
+    "enterTaluka": "Enter taluka name",
+    "cropInformation": "Crop Information",
+    "cropName": "Crop Name",
+    "selectCropName": "Select Crop Name",
+    "cropType": "Crop Type",
+    "selectCropType": "Select Crop Type",
+    "quantity": "Quantity",
+    "enterQuantity": "Enter quantity",
+    "quintal": "Quintal",
+    "quintalHint": "1 Quintal = 100 kg",
+    "kgHint": "Enter weight in kilograms",
+    "expectedPrice": "Expected Price",
+    "enterExpectedPrice": "Expected price per unit",
+    "expectedPriceHint": "Expected selling price per {{unit}}",
+    "districtForSale": "District for Sale",
+    "market": "Market",
+    "firstSelectDistrict": "First select district",
+    "noMarketsAvailable": "No markets available",
+    "selectMarket": "Select Market",
+    "harvestDate": "Harvest Date",
+    "harvestDateHint": "Select the date when the crop was harvested",
+    "cropPhoto": "Crop Photo",
+    "cropPreview": "Crop preview",
+    "clickToUpload": "Click to upload crop image",
+    "imageFormats": "JPG, PNG, WEBP (Max 5MB)",
+    "productSummary": "Product Summary",
+    "farmer": "Farmer",
+    "phone": "Phone",
+    "crop": "Crop",
+    "type": "Type",
+    "location": "Location",
+    "notEntered": "Not entered",
+    "notSelected": "Not selected",
+    "productVisibilityHint": "Your product will be visible to buyers across the platform"
+  },
+  "buttons": {
+    "nextCropDetails": "Next: Crop Details",
+    "back": "Back",
+    "addingProduct": "Adding Product...",
+    "addProductToMarketplace": "Add Product to Marketplace",
+    "contactFarmer": "Contact Farmer"
+  },
+  "warnings": {
+    "backendNotRunning": "Backend Server Not Running!",
+    "startBackendServer": "Please start your Flask backend server on http://127.0.0.1:5000",
+    "noDistrictsAvailable": "No districts available. Please check if the commodity models are loaded correctly.",
+    "noMarketsFound": "No markets found for {{district}}"
+  },
+  "alerts": {
+    "invalidImageType": "Please select a valid image file (JPEG, PNG, or WEBP)",
+    "imageSizeLimit": "Image size should be less than 5MB",
+    "serverNotRunning": "Cannot connect to server. Please make sure the backend is running.",
+    "productAddedSuccess": "Product added successfully!",
+    "fillRequiredFields": "Please fill all required farmer details",
+    "error": "Error: "
+  },
+  "errors": {
+    "farmerCreationFailed": "Failed to create farmer",
+    "productCreationFailed": "Failed to add product"
+  },
+  "products": {
+    "recentCommodities": "Recent Commodities",
+    "latestProducts": "Latest products added by farmers",
+    "noProductsAvailable": "No Products Available Yet",
+    "beFirstToAdd": "Be the first to add a product to the marketplace!"
+  },
+  "product": {
+    "recentlyHarvested": "Recently harvested",
+    "harvested1Day": "Harvested: 1 day ago",
+    "harvestedDays": "Harvested: {{days}} days ago",
+    "harvestedWeeks": "Harvested: {{weeks}} weeks ago",
+    "harvestedMonths": "Harvested: {{months}} months ago",
+    "localFarm": "Local Farm",
+    "maharashtra": "Maharashtra",
+    "available": "Available",
+    "freshness": "Freshness",
+    "qualityScore": "AI Quality Score"
+  },
+  "imageAlt": "Farmer using smartphone to manage crops"
+}

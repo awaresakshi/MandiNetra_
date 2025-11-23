@@ -251,7 +251,7 @@ const FarmersDashboard = () => {
   const prevStep = () => setStep(1);
 
   const cropOptions = [
-    'Tomato', 'Onion', 'Potato', 'Wheat', 'Rice', 'Bajra', 'Cotton', 
+    'Tomato', 'Onion', 'Potato', 'Wheat','Bringal', 'Rice', 'Bajra', 'Cotton', 
     'Sugarcane', 'Chikoo', 'Grapes', 'Mango', 'Orange', 'Papaya', 
     'Moong Dal', 'Mustard', 'Chickpea'
   ];

@@ -522,9 +522,12 @@
 
 .product-image {
   position: relative;
-  height: 160px;
-  background: #f8f9fa;
-  overflow: hidden;
+  height: 220px;
+  background: linear-gradient(135deg, #e7d729, #544602);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
 }
 
 .product-image img {
@@ -544,8 +547,8 @@
   justify-content: center;
   height: 100%;
   font-size: 2rem;
-  background: #acc7e3;
-  color: #adb5bd;
+  background: #f6f7f8;
+  color: #f5f8fa;
 }
 
 .product-content {

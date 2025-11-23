@@ -1,0 +1,66 @@
+{
+  "header": {
+    "title": "मूल्य विश्लेषण",
+    "description": "उन्नत बाजार बुद्धिमत्ता और मूल्य प्रवृत्ति विश्लेषण"
+  },
+  "filters": {
+    "commodity": "वस्तु",
+    "district": "जिला",
+    "market": "बाजार",
+    "timeRange": "समय सीमा",
+    "refreshData": "डेटा रिफ्रेश करें"
+  },
+  "timeRanges": {
+    "1month": "1 महीना",
+    "3months": "3 महीने",
+    "6months": "6 महीने",
+    "1year": "1 वर्ष"
+  },
+  "chart": {
+    "priceTrends": "मूल्य प्रवृत्तियाँ",
+    "currentPrice": "वर्तमान मूल्य",
+    "perQuintal": "प्रति क्विंटल",
+    "priceChange": "मूल्य परिवर्तन",
+    "volatility": "उतार-चढ़ाव",
+    "marketSentiment": "बाजार भावना"
+  },
+  "insights": {
+    "title": "बाजार अंतर्दृष्टि",
+    "demand": "उच्च मांग अलर्ट",
+    "supply": "आपूर्ति श्रृंखला अपडेट",
+    "weather": "मौसम प्रभाव",
+    "market": "निर्यात के अवसर",
+    "trend": "मूल्य प्रवृत्ति",
+    "volatility": "बाजार स्थिरता",
+    "seasonal": "मौसमी विश्लेषण",
+    "positive": "सकारात्मक",
+    "neutral": "तटस्थ",
+    "confidence": "आत्मविश्वास"
+  },
+  "comparison": {
+    "title": "बाजार तुलना",
+    "bestDeal": "सर्वोत्तम सौदा",
+    "market": "बाजार",
+    "price": "मूल्य",
+    "change": "परिवर्तन"
+  },
+  "trending": {
+    "title": "ट्रेंडिंग वस्तुएं",
+    "updated": "5 मिनट पहले अपडेट किया गया",
+    "commodity": "वस्तु",
+    "trend": "प्रवृत्ति",
+    "currentPrice": "वर्तमान मूल्य",
+    "change": "परिवर्तन",
+    "reason": "कारण",
+    "rising": "बढ़ रहा",
+    "falling": "गिर रहा",
+    "stable": "स्थिर"
+  },
+  "loading": {
+    "message": "बाजार विश्लेषण लोड हो रहा है..."
+  },
+  "noData": {
+    "message": "कोई डेटा उपलब्ध नहीं",
+    "description": "मूल्य प्रवृत्तियों को देखने के लिए एक वस्तु, जिला और बाजार चुनें"
+  }
+}

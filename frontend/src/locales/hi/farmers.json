@@ -1,0 +1,104 @@
+{
+  "status": {
+    "connected": "कनेक्टेड",
+    "serverOffline": "सर्वर ऑफलाइन",
+    "districts": "जिले"
+  },
+  "steps": {
+    "farmerDetails": "किसान विवरण",
+    "cropDetails": "फसल विवरण"
+  },
+  "forms": {
+    "addFarmerDetails": "किसान विवरण जोड़ें",
+    "addCropDetails": "फसल विवरण जोड़ें",
+    "step": "चरण {{step}} of {{total}}",
+    "farmerInformation": "किसान जानकारी",
+    "fullName": "पूरा नाम",
+    "enterFullName": "अपना पूरा नाम दर्ज करें",
+    "phoneNumber": "फोन नंबर",
+    "enterPhoneNumber": "10-अंकीय फोन नंबर दर्ज करें",
+    "phoneNumberHint": "देश कोड के बिना 10-अंकीय मोबाइल नंबर",
+    "district": "जिला",
+    "selectDistrict": "जिला चुनें",
+    "districtsAvailable": "{{count}} जिले उपलब्ध",
+    "taluka": "तालुका",
+    "enterTaluka": "तालुका नाम दर्ज करें",
+    "cropInformation": "फसल जानकारी",
+    "cropName": "फसल का नाम",
+    "selectCropName": "फसल का नाम चुनें",
+    "cropType": "फसल प्रकार",
+    "selectCropType": "फसल प्रकार चुनें",
+    "quantity": "मात्रा",
+    "enterQuantity": "मात्रा दर्ज करें",
+    "quintal": "क्विंटल",
+    "quintalHint": "1 क्विंटल = 100 किलो",
+    "kgHint": "वजन किलोग्राम में दर्ज करें",
+    "expectedPrice": "अनुमानित मूल्य",
+    "enterExpectedPrice": "प्रति यूनिट अनुमानित मूल्य",
+    "expectedPriceHint": "प्रति {{unit}} अनुमानित बिक्री मूल्य",
+    "districtForSale": "बिक्री के लिए जिला",
+    "market": "बाजार",
+    "firstSelectDistrict": "पहले जिला चुनें",
+    "noMarketsAvailable": "कोई बाजार उपलब्ध नहीं",
+    "selectMarket": "बाजार चुनें",
+    "harvestDate": "कटाई की तारीख",
+    "harvestDateHint": "वह तारीख चुनें जब फसल काटी गई थी",
+    "cropPhoto": "फसल फोटो",
+    "cropPreview": "फसल पूर्वावलोकन",
+    "clickToUpload": "फसल छवि अपलोड करने के लिए क्लिक करें",
+    "imageFormats": "JPG, PNG, WEBP (अधिकतम 5MB)",
+    "productSummary": "उत्पाद सारांश",
+    "farmer": "किसान",
+    "phone": "फोन",
+    "crop": "फसल",
+    "type": "प्रकार",
+    "location": "स्थान",
+    "notEntered": "दर्ज नहीं किया गया",
+    "notSelected": "चयनित नहीं",
+    "productVisibilityHint": "आपका उत्पाद प्लेटफॉर्म पर खरीदारों को दिखाई देगा"
+  },
+  "buttons": {
+    "nextCropDetails": "अगला: फसल विवरण",
+    "back": "पीछे",
+    "addingProduct": "उत्पाद जोड़ा जा रहा है...",
+    "addProductToMarketplace": "बाजार में उत्पाद जोड़ें",
+    "contactFarmer": "किसान से संपर्क करें"
+  },
+  "warnings": {
+    "backendNotRunning": "बैकेंड सर्वर नहीं चल रहा!",
+    "startBackendServer": "कृपया अपना Flask बैकेंड सर्वर http://127.0.0.1:5000 पर शुरू करें",
+    "noDistrictsAvailable": "कोई जिले उपलब्ध नहीं। कृपया जांचें कि कमोडिटी मॉडल सही से लोड हुए हैं।",
+    "noMarketsFound": "{{district}} के लिए कोई बाजार नहीं मिला"
+  },
+  "alerts": {
+    "invalidImageType": "कृपया एक वैध छवि फ़ाइल चुनें (JPEG, PNG, या WEBP)",
+    "imageSizeLimit": "छवि का आकार 5MB से कम होना चाहिए",
+    "serverNotRunning": "सर्वर से कनेक्ट नहीं हो सका। कृपया सुनिश्चित करें कि बैकेंड चल रहा है।",
+    "productAddedSuccess": "उत्पाद सफलतापूर्वक जोड़ा गया!",
+    "fillRequiredFields": "कृपया सभी आवश्यक किसान विवरण भरें",
+    "error": "त्रुटि: "
+  },
+  "errors": {
+    "farmerCreationFailed": "किसान बनाने में विफल",
+    "productCreationFailed": "उत्पाद जोड़ने में विफल"
+  },
+  "products": {
+    "recentCommodities": "हाल की वस्तुएं",
+    "latestProducts": "किसानों द्वारा जोड़े गए नवीनतम उत्पाद",
+    "noProductsAvailable": "अभी तक कोई उत्पाद उपलब्ध नहीं",
+    "beFirstToAdd": "बाजार में पहला उत्पाद जोड़ने वाले बनें!"
+  },
+  "product": {
+    "recentlyHarvested": "हाल में काटी गई",
+    "harvested1Day": "कटाई: 1 दिन पहले",
+    "harvestedDays": "कटाई: {{days}} दिन पहले",
+    "harvestedWeeks": "कटाई: {{weeks}} सप्ताह पहले",
+    "harvestedMonths": "कटाई: {{months}} महीने पहले",
+    "localFarm": "स्थानीय खेत",
+    "maharashtra": "महाराष्ट्र",
+    "available": "उपलब्ध",
+    "freshness": "ताजगी",
+    "qualityScore": "एआई गुणवत्ता स्कोर"
+  },
+  "imageAlt": "स्मार्टफोन का उपयोग कर फसल प्रबंधन करता किसान"
+}
