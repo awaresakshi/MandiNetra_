@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/BuyerMarketplace.css';
+import ActualPricesComponent from './ActualPricesComponent';
 
 const BuyerMarketplace = () => {
   const [commodity, setCommodity] = useState('');
@@ -16,6 +17,7 @@ const BuyerMarketplace = () => {
   const [availableCommodities, setAvailableCommodities] = useState([]);
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [showActualPrices, setShowActualPrices] = useState(false);
 
   const API_BASE_URL = 'http://127.0.0.1:5000';
 
@@ -46,14 +48,17 @@ const BuyerMarketplace = () => {
   // Fetch products from backend
   const fetchProducts = async () => {
     try {
-      setLoadingProducts(true);
-      const response = await fetch('http://127.0.0.1:5000/api/products');
+      const response = await fetch(`${API_BASE_URL}/api/products/recent`);
       if (response.ok) {
         const data = await response.json();
         setProducts(data.products || []);
       } else {
-        // Fallback to mock data if API fails
-        setProducts(getMockProducts());
+        // Fallback to all products if recent endpoint doesn't exist
+        const allProductsResponse = await fetch(`${API_BASE_URL}/api/products`);
+        if (allProductsResponse.ok) {
+          const allData = await allProductsResponse.json();
+          setProducts(allData.products?.slice(0, 6) || []);
+        }
       }
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -504,14 +509,36 @@ const BuyerMarketplace = () => {
                   <button onClick={resetForm} className="action-btn primary">
                     🔄 New Prediction
                   </button>
+                  <button 
+                    onClick={() => setShowActualPrices(true)}
+                    className="action-btn secondary"
+                    style={{ background: '#10b981' }}
+                  >
+                    📊 Compare with Actual Prices
+                  </button>
                 </div>
               </div>
             </div>
           )}
         </div>
+      </div>
 
-        {/* Products Marketplace Section */}
-        <div className="products-marketplace-section">
+      {/* Actual Prices Modal */}
+      {showActualPrices && (
+        <div className="actual-prices-modal">
+          <div className="modal-overlay" onClick={() => setShowActualPrices(false)}></div>
+          <div className="modal-content">
+            <ActualPricesComponent 
+              commodity={commodity}
+              district={district}
+              predictedPrice={result?.predicted_price}
+              onClose={() => setShowActualPrices(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="products-marketplace-section">
           <div className="section-header">
             <h2>Available Products</h2>
             <p>Fresh produce directly from farmers across Maharashtra</p>
@@ -609,7 +636,6 @@ const BuyerMarketplace = () => {
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 };

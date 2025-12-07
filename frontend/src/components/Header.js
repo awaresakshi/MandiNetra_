@@ -13,7 +13,6 @@ const Header = ({ activeTab, setActiveTab }) => {
 
   const handleLanguageChange = (languageCode) => {
     i18n.changeLanguage(languageCode);
-    // Save to backend user preference if user is logged in
     localStorage.setItem('preferred-language', languageCode);
   };
 
