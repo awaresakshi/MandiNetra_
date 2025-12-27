@@ -10,6 +10,7 @@ import logging
 import random
 import pandas as pd
 
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -445,6 +446,76 @@ for commodity in available_commodities:
     if commodity in COMMODITY_DISTRICTS:
         logger.info(f"📊 {commodity} model knows these districts: {COMMODITY_DISTRICTS[commodity]}")
 
+        # ==================== CROP RECOMMENDATION MODEL ====================
+
+# Load the crop recommendation model
+try:
+    model_path = './crop_recommend/modules/crop_recommendation_model.pkl'
+    with open(model_path, 'rb') as f:
+        crop_model_data = pickle.load(f)
+    crop_model = crop_model_data['model']
+    crop_label_encoder = crop_model_data['label_encoder']
+    crop_feature_names = crop_model_data['feature_names']
+    logger.info(f"✅ Crop recommendation model loaded successfully from {model_path}")
+except Exception as e:
+    crop_model_data = None
+    crop_model = None
+    crop_label_encoder = None
+    crop_feature_names = ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall']
+    logger.warning(f"⚠️ Crop recommendation model not loaded from {model_path}: {str(e)}")
+
+    # Crop information database
+CROP_DATABASE = {
+    'rice': {
+        'name': 'Rice',
+        'season': 'Kharif (Monsoon)',
+        'water_requirement': 'High',
+        'soil_type': 'Clayey loam',
+        'duration': '90-150 days',
+        'temperature': '20-35°C',
+        'yield': '2-4 tons/acre',
+        'price_range': '₹2500-5000/quintal',
+        'description': 'Rice is a staple food crop.',
+        'icon': '🍚'
+    },
+    'wheat': {
+        'name': 'Wheat',
+        'season': 'Rabi (Winter)',
+        'water_requirement': 'Medium',
+        'soil_type': 'Well-drained loamy soil',
+        'duration': '120-140 days',
+        'temperature': '15-25°C',
+        'yield': '2-3.5 tons/acre',
+        'price_range': '₹2000-2800/quintal',
+        'description': 'Wheat is a rabi crop.',
+        'icon': '🌾'
+    },
+    'maize': {
+        'name': 'Maize',
+        'season': 'Kharif',
+        'water_requirement': 'Medium',
+        'soil_type': 'Well-drained sandy loam',
+        'duration': '90-100 days',
+        'temperature': '18-27°C',
+        'yield': '2-3 tons/acre',
+        'price_range': '₹1800-2500/quintal',
+        'description': 'Maize grows in warm weather.',
+        'icon': '🌽'
+    },
+    'cotton': {
+        'name': 'Cotton',
+        'season': 'Kharif',
+        'water_requirement': 'Medium',
+        'soil_type': 'Black soil',
+        'duration': '150-180 days',
+        'temperature': '20-30°C',
+        'yield': '8-12 quintals/acre',
+        'price_range': '₹5000-8000/quintal',
+        'description': 'Cotton is a cash crop.',
+        'icon': '🧵'
+    }
+}
+
 # ==================== TRANSLATION MODULE (FIXED) ====================
 
 # Simple translation dictionary for common terms
@@ -561,15 +632,15 @@ def get_multilingual_response(base_english_text, language='en'):
             "hi": base_english_text,
             "mr": base_english_text
         }
-
 @app.route("/")
 def home():
     """Home route"""
     return jsonify({
-        "message": "MandiNetra Price Prediction API",
+        "message": "MandiNetra - Agricultural Intelligence Platform",
         "status": "running",
         "available_commodities": available_commodities,
-        "total_commodities": len(available_commodities)
+        "total_commodities": len(available_commodities),
+        "crop_recommendation": "available" if crop_model_data else "mock_mode"
     })
 
 # ==================== FARMER ENDPOINTS ====================
@@ -2374,6 +2445,108 @@ def health_check():
         }
     })
 
+
+# ==================== CROP RECOMMENDATION ====================
+
+@app.route('/api/crop/recommend', methods=['POST'])
+def crop_recommend():
+    """Recommend crops based on soil and climate parameters"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+        
+        # Extract features
+        features = [
+            float(data['N']),
+            float(data['P']),
+            float(data['K']),
+            float(data['temperature']),
+            float(data['humidity']),
+            float(data['ph']),
+            float(data['rainfall'])
+        ]
+        
+        # Make prediction if model is available
+        if crop_model is not None:
+            input_data = pd.DataFrame([features], columns=crop_feature_names)
+            prediction_encoded = crop_model.predict(input_data)[0]
+            prediction_label = crop_label_encoder.inverse_transform([prediction_encoded])[0]
+            
+            # Get probabilities
+            probabilities = crop_model.predict_proba(input_data)[0]
+            top_indices = np.argsort(probabilities)[-3:][::-1]
+        else:
+            # Fallback: simple rule-based recommendation
+            N, P, K, temp, humidity, ph, rainfall = features
+            if rainfall > 150 and temp > 25:
+                prediction_label = 'rice'
+            elif 20 <= temp <= 25 and 100 <= rainfall <= 150:
+                prediction_label = 'wheat'
+            else:
+                prediction_label = 'maize'
+            top_indices = [0, 1, 2]
+            probabilities = [0.8, 0.6, 0.4]
+        
+        # Prepare response
+        response = {
+            'predicted_crop': prediction_label,
+            'top_recommendations': []
+        }
+        
+        # Add top recommendations
+        for i, idx in enumerate(top_indices[:3]):
+            if crop_label_encoder is not None:
+                crop_name = crop_label_encoder.inverse_transform([idx])[0]
+            else:
+                crop_names = ['rice', 'wheat', 'maize', 'cotton']
+                crop_name = crop_names[idx % len(crop_names)]
+            
+            crop_info = CROP_DATABASE.get(crop_name.lower(), {})
+            
+            response['top_recommendations'].append({
+                'crop': crop_info.get('name', crop_name.title()),
+                'probability': round(float(probabilities[idx]) * 100, 2) if i == 0 else round(80 - (i * 20), 2),
+                'season': crop_info.get('season', 'Adaptable'),
+                'duration': crop_info.get('duration', '90-120 days')
+            })
+        
+        return jsonify(response)
+    
+    except Exception as e:
+        logger.error(f"❌ Crop recommendation error: {str(e)}")
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/crop/details', methods=['GET'])
+def get_crop_details():
+    """Get information about all available crops"""
+    try:
+        crops_list = []
+        
+        for crop_id, crop_info in CROP_DATABASE.items():
+            crops_list.append({
+                'id': crop_id,
+                'name': crop_info['name'],
+                'season': crop_info['season'],
+                'water_requirement': crop_info['water_requirement'],
+                'soil_type': crop_info['soil_type'],
+                'duration': crop_info['duration'],
+                'temperature': crop_info['temperature'],
+                'yield': crop_info['yield'],
+                'price_range': crop_info['price_range'],
+                'description': crop_info['description'],
+                'icon': crop_info.get('icon', '🌾')
+            })
+        
+        return jsonify({
+            'crops': crops_list,
+            'total': len(crops_list)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching crop details: {str(e)}")
+        return jsonify({'error': 'Failed to fetch crop details'}), 500
 @app.route('/api/crop-suggestions', methods=['POST'])
 def get_crop_suggestions():
     """Get AI-powered crop suggestions based on season and region"""
@@ -2518,6 +2691,10 @@ if __name__ == '__main__':
     print(f"📁 Upload folder: {app.config['UPLOAD_FOLDER']}")
     print(f"🚀 Backend running on: http://127.0.0.1:5000")
     print(f"🌐 React app should connect from: http://localhost:3000")
+    print(f"🌱 Crop Recommendation: {'Active' if crop_model_data else 'Mock Mode'}")
+    print(f"\n📊 NEW ENDPOINTS:")
+    print(f"   POST /api/crop/recommend - Get crop recommendations")
+    print(f"   GET  /api/crop/details - Get crop information")
     
     # Debug info for all commodities
     for commodity in available_commodities:
