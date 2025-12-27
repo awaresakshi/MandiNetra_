@@ -450,7 +450,7 @@ for commodity in available_commodities:
 
 # Load the crop recommendation model
 try:
-    model_path = './crop_recommend/modules/crop_recommendation_model.pkl'
+model_path = 'crop_recommendation_model.pkl'
     with open(model_path, 'rb') as f:
         crop_model_data = pickle.load(f)
     crop_model = crop_model_data['model']
