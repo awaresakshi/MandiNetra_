@@ -70,7 +70,7 @@ const Header = ({ activeTab, setActiveTab }) => {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
+      {/* Navigation Tabs - UPDATED WITH CROP RECOMMENDATION */}
       <nav className="navigation-tabs">
         <div className="nav-container">
           <button 
@@ -96,6 +96,16 @@ const Header = ({ activeTab, setActiveTab }) => {
             <span className="nav-icon">📊</span>
             <span className="nav-text">{t('navigation.analytics')}</span>
           </button>
+
+          {/* ========== ADD THIS NEW TAB ========== */}
+          <button 
+            className={`nav-tab ${activeTab === 'crop' ? 'active' : ''}`}
+            onClick={() => setActiveTab('crop')}
+          >
+            <span className="nav-icon">🌱</span>
+            <span className="nav-text">{t('Crop Recommendation')}</span>
+          </button>
+          {/* ====================================== */}
 
           <button 
             className={`nav-tab ${activeTab === 'settings' ? 'active' : ''}`}
