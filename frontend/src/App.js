@@ -5,6 +5,9 @@ import Header from './components/Header';
 import FarmersDashboard from './components/FarmersDashboard';
 import BuyerMarketplace from './components/BuyerMarketplace';
 import PriceAnalytics from './components/PriceAnalytics';
+import CropRecommendation from './components/crop/CropRecommendation'; 
+
+//import Settings from './components/Settings'; // Optional: if you have a Settings component
 
 function App() {
   const [activeTab, setActiveTab] = useState('farmers');
@@ -25,7 +28,11 @@ function App() {
         return <BuyerMarketplace />;
       case 'analytics':
         return <PriceAnalytics />;
+      case 'crop':
+        return <CropRecommendation />;
       case 'settings':
+        // If you have a Settings component, use that instead
+        // return <Settings />;
         return (
           <div className="settings-page">
             <h2>Settings & Alerts</h2>
