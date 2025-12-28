@@ -1,0 +1,9 @@
+{
+  "navigation": {
+    "farmers": "Farmers Dashboard",
+    "buyers": "Buyer Marketplace",
+    "analytics": "Price Analytics",
+    "crop": "Crop Recommendation",  
+    "settings": "Settings & Alerts"
+  }
+  }
